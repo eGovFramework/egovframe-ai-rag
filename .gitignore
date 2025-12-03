@@ -1,0 +1,100 @@
+HELP.md
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+### Eclipse ###
+.classpath
+.project
+.settings/
+.metadata/
+.loadpath
+bin/
+tmp/
+*.launch
+.externalToolBuilders/
+local.properties
+
+### STS (Spring Tool Suite) ###
+.apt_generated
+.factorypath
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### VS Code ###
+.vscode/
+
+### Maven ###
+dependency-reduced-pom.xml
+.mvn/timing.properties
+
+### Logs ###
+*.log
+logs/
+
+### Redis Data ###
+redis_data/
+
+### Environment-specific Configuration ###
+application-local.yml
+application-local.properties
+application-dev.yml
+application-dev.properties
+application-prod.yml
+application-prod.properties
+application-*.yml
+application-*.properties
+!application.yml
+!application.properties
+
+### Environment Variables ###
+.env
+.env.local
+.env.*.local
+
+### Temporary Files ###
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+*.bak
+*.backup
+
+### OS Specific ###
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+.directory
+.Trash-*
+
+### Embedding model ###
+/src/main/resources/model/

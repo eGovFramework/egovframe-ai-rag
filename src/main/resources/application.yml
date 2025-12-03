@@ -1,0 +1,123 @@
+spring:
+  application:
+    name: spring-ai-rag-redis
+
+  # Ollama 설정
+  ai:
+    ollama:
+      base-url: http://localhost:11434
+      chat:
+        model: qwen3-4b:Q4_K_M
+        options:
+          temperature: 0.4
+
+    # 로컬 ONNX 모델 사용 설정
+    model:
+      embedding: transformers
+
+    embedding:
+      transformer:
+        onnx:
+          modelUri: classpath:model/model.onnx
+          modelOutputName: token_embeddings
+        tokenizer:
+          uri: classpath:model/tokenizer.json
+        djl:
+          # DJL 성능 최적화 설정 (선택사항)
+          optimization:
+            enabled: true
+          threads: 4
+
+    # Redis 벡터 저장소 설정
+    # 처음 실행 시에만 true로 설정하고, 이후에는 false로 변경하여 중복 데이터 방지
+    vectorstore:
+      redis:
+        initialize-schema: true
+        index-name: document-index
+
+    # 문서 경로 설정
+    document:
+      path: file:C:/workspace-test/upload/data/**/*.md
+      pdf-path: file:C:/workspace-test/upload/data/**/*.pdf
+
+      # PDF 리더 설정
+      pdf:
+        page-top-margin: 0
+        pages-per-document: 1
+
+      # 요약 생성 설정 여부
+      enable-summary: false
+      # 요약을 생성할 최소 청크 수 (기본값: 5)
+      summary-min-chunks: 2
+
+      # 키워드 추출 설정 여부
+      enable-keywords: false
+      keyword-count: 5
+
+      # 청크 크기 설정 (토큰 단위)
+      chunk-size: 4000
+
+      # 최소 청크 크기 (문자 단위)
+      min-chunk-size-chars: 350
+
+      # 최대 청크 수
+      max-num-chunks: 500
+
+      # 임베딩할 최소 청크 길이
+      min-chunk-length-to-embed: 50
+
+      # 문서 정규화 설정
+      normalization:
+        # 정규화 기능 활성화 여부
+        enabled: true
+        # HTML 태그 제거 여부
+        remove-html-tags: true
+        # 마크다운 코드 블록 제거 여부
+        remove-code-blocks: false
+        # 공백 정규화 여부
+        normalize-whitespace: true
+        # 줄바꿈 정규화 여부
+        normalize-newlines: true
+        # 특수문자 정리 여부
+        clean-special-chars: true
+
+  # Redis 연결 설정
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+  # 빈 오버라이딩 허용 (임베딩 모델 빈 충돌 해결)
+  main:
+    allow-bean-definition-overriding: true
+
+# 로깅 설정
+logging:
+  level:
+    com.example.chat: DEBUG
+    org.springframework.ai: INFO
+    # DJL 관련 로그 레벨 조정 (성능 최적화 경고 숨김)
+    ai.djl.pytorch.engine.PtEngine: WARN
+    ai.djl: WARN
+
+# RAG 질문 압축 설정
+# 대화 히스토리를 기반으로 후속 질문을 독립적인 질문으로 압축
+# true: 압축 활성화 (검색 정확도 향상, 응답 시간 증가)
+# false: 압축 비활성화 (빠른 응답, 원본 질문으로 검색)
+rag:
+  enable-query-compression: true
+
+  # RAG 유사도 임계값 설정 (0.0 ~ 1.0)
+  # 실제 검색 유사도: 0.22~0.26 범위 → 임베딩 품질 제한
+  # 임계값을 조정: 0.20 (너무 높으면 검색 결과 없음)
+  similarity:
+    threshold: 0.20
+
+  # RAG 검색 결과 개수 (Top K)
+  top-k: 3
+
+# 채팅 메모리 설정 (기본값: 20)
+chat:
+  memory:
+    max-messages: 20
+
