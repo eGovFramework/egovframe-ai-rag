@@ -21,13 +21,26 @@
 
 - 해당 프로젝트는 Redis Stack을 사용하며, Redis Stack은 Apache 2.0 라이선스가 **아닌** 다음 라이선스 하에 배포되므로 상용 서비스 제공 시 제약이 존재함
 
-- **Redis Stack Server**: RSALv2 및 SSPLv1 듀얼 라이선스
-- **RedisInsight**: SSPL 라이선스
+| 기술 스택 | 라이선스 | 상용 사용 가능 여부 | 비고 |
+| :------- | :------ | :----------------- | :--- |
+| **Spring AI** | Apache 2.0 | 가능 | 제약 없음 |
+| **Ollama** | MIT | 가능 | 제약 없음 (단, 사용 모델의 라이선스는 별도 확인 필요) |
+| **Redis Stack Server** | RSALv2 / SSPLv1 듀얼 라이선스 | 조건부 | **Apache 2.0 아님**, SaaS 제공 시 제약 가능 |
+| **RedisInsight** | SSPL | 조건부 | SaaS 제공 시 소스 공개 의무 |
+| **ONNX Runtime** | MIT | 가능 | 제약 없음 |
 
-- 상세한 사항은 다음 문서를 참고할 것
+### 주의사항
+
+- **Redis Stack**은 Apache 2.0 라이선스가 **아니므로** 상용 서비스 제공 시 라이선스 조항 확인이 필요함.
+- **Ollama**는 MIT 라이선스이지만, 사용하는 **LLM 모델의 라이선스는 별도로 확인**하여야 함.
+
+### 참고 링크
+
 - [Redis 라이선스 정보](https://redis.io/legal/licenses/)
 - [RSALv2 라이선스 전문](https://redis.com/legal/rsalv2-agreement/)
 - [SSPL 라이선스 전문](https://www.mongodb.com/licensing/server-side-public-license)
+- [Ollama 라이선스](https://github.com/ollama/ollama/blob/main/LICENSE)
+- [Spring AI 라이선스](https://github.com/spring-projects/spring-ai/blob/main/LICENSE.txt)
 
 ## 사전 준비
 
