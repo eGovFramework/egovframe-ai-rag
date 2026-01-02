@@ -420,8 +420,8 @@
 
         function testAsync() {
             fetch('/api/documents/testAsync', { method: 'GET' })
-  .then(res => res.json())
-  .then(data => { console.log(data); });
+				.then(res => res.json())
+				.then(data => { console.log(data); });
         }
         
         // ===== 채팅 세션 관리 함수들 =====
@@ -683,7 +683,7 @@
         }
         
         /**
-         * 서버에서 세션 목록을 가져와 새로고침 (Promise 반환)
+         * 서버에서 세션 목록을 가져와 새로고침
          */
         function refreshSessionsList() {
             return fetch('/api/chat/sessions')
@@ -786,7 +786,7 @@
         }
         
         /**
-         * 선택된 모델을 가져옴옴
+         * 선택된 모델을 가져옴
          */
         function getSelectedModel() {
             const modelSelect = document.getElementById('model-select');
@@ -958,103 +958,103 @@
         }
         
         function reindexDocuments() {
-    const reindexBtn = document.getElementById('reindex-btn');
-    const statusDiv = document.getElementById('document-status');
-    const statusText = document.getElementById('status-text');
-    const progressContainer = document.getElementById('progress-container');
+			const reindexBtn = document.getElementById('reindex-btn');
+			const statusDiv = document.getElementById('document-status');
+			const statusText = document.getElementById('status-text');
+			const progressContainer = document.getElementById('progress-container');
     
-    // 버튼 비활성화
-    reindexBtn.disabled = true;
-    reindexBtn.textContent = '처리 중...';
+			// 버튼 비활성화
+			reindexBtn.disabled = true;
+			reindexBtn.textContent = '처리 중...';
     
-    // 상태 표시 초기화
-    statusDiv.className = 'document-status processing';
-    statusDiv.style.display = 'block';
-    statusText.textContent = '문서 재인덱싱을 시작합니다...';
-    progressContainer.style.display = 'none';
+			// 상태 표시 초기화
+			statusDiv.className = 'document-status processing';
+			statusDiv.style.display = 'block';
+			statusText.textContent = '문서 재인덱싱을 시작합니다...';
+			progressContainer.style.display = 'none';
     
-    // 기존 상태 체크 인터벌 정리
-    if (statusCheckInterval) {
-        clearInterval(statusCheckInterval);
-    }
+			// 기존 상태 체크 인터벌 정리
+			if (statusCheckInterval) {
+				clearInterval(statusCheckInterval);
+			}
     
-    // 비동기 재인덱싱 요청
-    fetch('/api/documents/reindex', {
-        method: 'POST'
-    })
-    .then(response => {
-        if (response.ok) {
-            // 상태 체크 시작
-            startStatusCheck();
-        } else {
-            throw new Error('재인덱싱 요청 실패');
-        }
-    })
-    .catch(error => {
-        console.error('재인덱싱 오류:', error);
-        statusDiv.className = 'document-status error';
-        statusText.textContent = '재인덱싱 요청 중 오류가 발생했습니다.';
-        reindexBtn.disabled = false;
-        reindexBtn.textContent = '문서 재인덱싱';
-    });
-}
+			// 비동기 재인덱싱 요청
+			fetch('/api/documents/reindex', {
+				method: 'POST'
+			})
+			.then(response => {
+				if (response.ok) {
+					// 상태 체크 시작
+					startStatusCheck();
+				} else {
+					throw new Error('재인덱싱 요청 실패');
+				}
+			})
+			.catch(error => {
+				console.error('재인덱싱 오류:', error);
+				statusDiv.className = 'document-status error';
+				statusText.textContent = '재인덱싱 요청 중 오류가 발생했습니다.';
+				reindexBtn.disabled = false;
+				reindexBtn.textContent = '문서 재인덱싱';
+			});
+		}
         
-function startStatusCheck() {
-    statusCheckInterval = setInterval(() => {
-        fetch('/api/documents/status')
-            .then(response => response.json())
-            .then(data => {
-                const statusDiv = document.getElementById('document-status');
-                const statusText = document.getElementById('status-text');
-                const progressContainer = document.getElementById('progress-container');
-                const progressFill = document.getElementById('progress-fill');
-                const progressText = document.getElementById('progress-text');
-                const reindexBtn = document.getElementById('reindex-btn');
+		function startStatusCheck() {
+			statusCheckInterval = setInterval(() => {
+				fetch('/api/documents/status')
+					.then(response => response.json())
+					.then(data => {
+						const statusDiv = document.getElementById('document-status');
+						const statusText = document.getElementById('status-text');
+						const progressContainer = document.getElementById('progress-container');
+						const progressFill = document.getElementById('progress-fill');
+						const progressText = document.getElementById('progress-text');
+						const reindexBtn = document.getElementById('reindex-btn');
                 
-                if (data.processing) {
-                    // 처리 중인 경우
-                    statusDiv.className = 'document-status processing';
-                    statusText.textContent = '문서를 처리하고 있습니다...';
-                    progressContainer.style.display = 'block';
+						if (data.processing) {
+							// 처리 중인 경우
+							statusDiv.className = 'document-status processing';
+							statusText.textContent = '문서를 처리하고 있습니다...';
+							progressContainer.style.display = 'block';
                     
-                    // 진행률 계산 및 표시
-                    const percentage = data.totalCount > 0 ? (data.processedCount / data.totalCount) * 100 : 0;
-                    progressFill.style.width = percentage + '%';
-                    progressText.textContent = `${data.processedCount} / ${data.totalCount}`;
-                } else {
-                    // 처리 완료된 경우
-                    clearInterval(statusCheckInterval);
-                    statusCheckInterval = null;
+							// 진행률 계산 및 표시
+							const percentage = data.totalCount > 0 ? (data.processedCount / data.totalCount) * 100 : 0;
+							progressFill.style.width = percentage + '%';
+							progressText.textContent = `${data.processedCount} / ${data.totalCount}`;
+						} else {
+							// 처리 완료된 경우
+							clearInterval(statusCheckInterval);
+							statusCheckInterval = null;
                     
-                    statusDiv.className = 'document-status completed';
-                    statusText.textContent = `재인덱싱 완료: ${data.processedCount}개 청크 처리됨`;
-                    progressContainer.style.display = 'none';
+							statusDiv.className = 'document-status completed';
+							statusText.textContent = `재인덱싱 완료: ${data.processedCount}개 청크 처리됨`;
+							progressContainer.style.display = 'none';
                     
-                    reindexBtn.disabled = false;
-                    reindexBtn.textContent = '문서 재인덱싱';
+							reindexBtn.disabled = false;
+							reindexBtn.textContent = '문서 재인덱싱';
                     
-                    // 5초 후 상태 숨김
-                    setTimeout(() => {
-                        statusDiv.style.display = 'none';
-                    }, 5000);
-                }
-            })
-            .catch(error => {
-                console.error('상태 확인 오류:', error);
-                clearInterval(statusCheckInterval);
-                statusCheckInterval = null;
+							// 5초 후 상태 숨김
+							setTimeout(() => {
+								statusDiv.style.display = 'none';
+							}, 5000);
+						}
+					})
+					.catch(error => {
+						console.error('상태 확인 오류:', error);
+						clearInterval(statusCheckInterval);
+						statusCheckInterval = null;
                 
-                const statusDiv = document.getElementById('document-status');
-                const statusText = document.getElementById('status-text');
-                const reindexBtn = document.getElementById('reindex-btn');
+						const statusDiv = document.getElementById('document-status');
+						const statusText = document.getElementById('status-text');
+						const reindexBtn = document.getElementById('reindex-btn');
                 
-                statusDiv.className = 'document-status error';
-                statusText.textContent = '상태 확인 중 오류가 발생했습니다.';
-                reindexBtn.disabled = false;
-                reindexBtn.textContent = '문서 재인덱싱';
-            });
-    }, 1000); // 1초마다 상태 확인
-}
+						statusDiv.className = 'document-status error';
+						statusText.textContent = '상태 확인 중 오류가 발생했습니다.';
+						reindexBtn.disabled = false;
+						reindexBtn.textContent = '문서 재인덱싱';
+					});
+			}, 1000); // 1초마다 상태 확인
+		}
         
         // 페이지 로드 시 초기 상태 확인
         document.addEventListener('DOMContentLoaded', function() {
