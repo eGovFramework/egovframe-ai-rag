@@ -132,7 +132,7 @@ public class EgovSessionAwareChatServiceImpl extends EgovAbstractServiceImpl imp
     }
 
     /**
-     * ChatClient RequestSpec을 생성하는 공통 메서드
+     * ChatClientRequestSpec을 생성하는 공통 메서드
      *
      * @param query 사용자 질문
      * @param model 모델 이름 (null 가능)
