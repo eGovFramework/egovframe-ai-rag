@@ -36,10 +36,10 @@ public class EgovSessionAwareChatServiceImpl extends EgovAbstractServiceImpl imp
 
     @Value("${rag.enable-query-compression:true}")
     private boolean enableQueryCompression;
-    
+
     // StructuredOutputConverter 인스턴스들 (<think> 태그 처리)
-    private final StructuredOutputConverter<TechnologyResponse> technologyOutputConverter = 
-        EgovThinkTagOutputConverter.of(TechnologyResponse.class);
+    private final StructuredOutputConverter<TechnologyResponse> technologyOutputConverter = EgovThinkTagOutputConverter
+            .of(TechnologyResponse.class);
 
     /**
      * 세션별 RAG 기반 스트리밍 응답 생성
@@ -53,12 +53,13 @@ public class EgovSessionAwareChatServiceImpl extends EgovAbstractServiceImpl imp
             log.debug("세션 {} RAG 응답 생성 시작", sessionId);
             validateSessionId(sessionId);
 
-            // 원본 질문으로 ChatClient RequestSpec 생성 (사용자 메시지로 저장)
+            // 원본 질문으로 ChatClientRequestSpec 생성 (사용자 메시지로 저장)
             ChatClientRequestSpec requestSpec = createRequestSpec(query, model);
 
             // RAG 어드바이저 생성 (질문 압축 설정값에 따라 동작 결정)
             log.info("RAG 어드바이저 생성 시작 - 세션: {}, 원본 질문: '{}', 질문 압축: {}", sessionId, query, enableQueryCompression);
-            Advisor ragAdvisor = EgovRagConfig.createRagAdvisor(sessionId, compressionTransformer, vectorStoreDocumentRetriever, enableQueryCompression);
+            Advisor ragAdvisor = EgovRagConfig.createRagAdvisor(sessionId, compressionTransformer,
+                    vectorStoreDocumentRetriever, enableQueryCompression);
             log.info("RAG 어드바이저 생성 완료 - 세션: {}", sessionId);
 
             log.info("RAG 스트리밍 시작 - 세션: {}, 원본 질문: '{}'", sessionId, query);
@@ -89,8 +90,8 @@ public class EgovSessionAwareChatServiceImpl extends EgovAbstractServiceImpl imp
         try {
             log.debug("세션 {} 일반 응답 생성 시작", sessionId);
 
-            // 원본 질문으로 ChatClient RequestSpec 생성 (RAG 없으므로 압축 불필요)
-            ChatClient.ChatClientRequestSpec requestSpec = createRequestSpec(query, model);
+            // 원본 질문으로 ChatClientRequestSpec 생성 (RAG 없으므로 압축 불필요)
+            ChatClientRequestSpec requestSpec = createRequestSpec(query, model);
 
             // ChatMemory 어드바이저만 적용 (RAG 없음)
             // MessageChatMemoryAdvisor가 자동으로 히스토리를 제공하므로 별도 압축 불필요
@@ -105,7 +106,7 @@ public class EgovSessionAwareChatServiceImpl extends EgovAbstractServiceImpl imp
             return Flux.error(e);
         }
     }
-    
+
     /**
      * JSON 구조화된 출력 - 기술 정보
      *
@@ -120,7 +121,7 @@ public class EgovSessionAwareChatServiceImpl extends EgovAbstractServiceImpl imp
             // 커스텀 StructuredOutputConverter 사용하여 <think> 태그 처리
             return ollamaChatClient.prompt()
                     .user(u -> u.text("다음 질문에 대해 기술 정보를 제공해주세요: {query}")
-                               .param("query", query))
+                            .param("query", query))
                     .call()
                     .entity(technologyOutputConverter);
 
@@ -135,16 +136,16 @@ public class EgovSessionAwareChatServiceImpl extends EgovAbstractServiceImpl imp
      *
      * @param query 사용자 질문
      * @param model 모델 이름 (null 가능)
-     * @return 구성된 ChatClient.ChatClientRequestSpec
+     * @return 구성된 ChatClientRequestSpec
      */
-    private ChatClient.ChatClientRequestSpec createRequestSpec(String query, String model) {
-        ChatClient.ChatClientRequestSpec requestSpec = ollamaChatClient.prompt().user(query);
+    private ChatClientRequestSpec createRequestSpec(String query, String model) {
+        ChatClientRequestSpec requestSpec = ollamaChatClient.prompt().user(query);
 
         if (model != null && !model.trim().isEmpty()) {
             requestSpec = requestSpec.options(ChatOptions.builder()
-                .model(model)
-                .temperature(0.3)
-                .build());
+                    .model(model)
+                    .temperature(0.3)
+                    .build());
             log.debug("지정된 모델로 응답 생성: {}", model);
         } else {
             log.debug("기본 모델로 응답 생성");
