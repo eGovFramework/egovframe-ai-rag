@@ -65,7 +65,7 @@ public class EgovSessionAwareChatServiceImpl extends EgovAbstractServiceImpl imp
             log.info("RAG 스트리밍 시작 - 세션: {}, 원본 질문: '{}'", sessionId, query);
 
             // ChatMemory 어드바이저와 RAG 어드바이저 적용
-            // - MessageChatMemoryAdvisor: 원본 질문을 사용자 메시지로 저장
+            // - MessageChatMemoryAdvisor: 대화 이력을 프롬프트에 포함
             // - RAG Advisor: 내부 QueryTransformer에서 히스토리 압축 후 문서 검색
             return requestSpec
                     .advisors(messageChatMemoryAdvisor, ragAdvisor)
