@@ -1,0 +1,132 @@
+spring:
+  application:
+    name: langchain4j-ai-rag-postgre
+
+  # PostgreSQL 데이터베이스 설정
+  datasource:
+    url: jdbc:postgresql://localhost:5432/ragdb
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+
+  # JPA 설정
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    show-sql: false
+
+  # 빈 오버라이딩 허용
+  main:
+    allow-bean-definition-overriding: true
+
+# 애플리케이션 설정
+app:
+  # ONNX 임베딩 모델 설정 파일 경로
+  # 외부 JSON 파일에서 모델 및 토크나이저 파일 경로를 로드
+  # Windows 예: C:/Users/{username}/langchain4j-config/embeddingConfig.json
+  # Linux/Mac 예: /home/{username}/langchain4j-config/embeddingConfig.json
+  embedding-config-path: ${user.home}/langchain4j-Config/Config/embeddingConfig.json
+
+# LangChain4j Ollama 설정
+langchain4j:
+  ollama:
+    base-url: http://localhost:11434
+    chat-model:
+      model-name: HyperCLOVA-3b:Q4_K_MM
+      temperature: 0.4
+      timeout: 60s
+
+# PGVector 설정
+pgvector:
+  # 데이터베이스 연결 정보
+  host: localhost
+  port: 5432
+  database: ragdb
+  username: postgres
+  password: postgres
+  # 벡터 저장소 테이블 설정
+  table-name: document_embeddings
+  # 벡터 차원 (ko-sroberta-multitask 모델의 출력 차원)
+  dimension: 768
+  # 인덱스 생성 여부
+  create-table: true
+  # 거리 측정 방식 (cosine, euclidean, inner_product)
+  distance-type: cosine
+
+# 문서 처리 설정
+document:
+  # 문서 경로 설정
+  path: file:C:/workspace-test/upload/data/**/*.md
+  pdf-path: file:C:/workspace-test/upload/data/**/*.pdf
+
+  # PDF 리더 설정
+  pdf:
+    page-top-margin: 0
+    pages-per-document: 1
+
+  # 문서 변환 설정
+  # 청크 크기 설정 (토큰 단위)
+  chunk-size: 4000
+
+  # 최소 청크 크기 (문자 단위)
+  min-chunk-size-chars: 350
+
+  # 최대 청크 수
+  max-num-chunks: 500
+
+  # 임베딩할 최소 청크 길이
+  min-chunk-length-to-embed: 50
+
+  # 문서 정규화 설정
+  normalization:
+    # 정규화 기능 활성화 여부
+    enabled: true
+    # HTML 태그 제거 여부
+    remove-html-tags: true
+    # 마크다운 코드 블록 제거 여부
+    remove-code-blocks: false
+    # 공백 정규화 여부
+    normalize-whitespace: true
+    # 줄바꿈 정규화 여부
+    normalize-newlines: true
+    # 특수문자 정리 여부
+    clean-special-chars: true
+
+# RAG 설정
+rag:
+  # RAG 유사도 임계값 설정 (0.0 ~ 1.0)
+  similarity:
+    threshold: 0.20
+
+  # RAG 검색 결과 개수 (Top K)
+  top-k: 3
+
+# 채팅 메모리 설정
+chat:
+  memory:
+    # 최대 메시지 수
+    max-messages: 20
+    # PostgreSQL 테이블명
+    table-name: chat_memory
+
+# 세션 관리 설정
+session:
+  # PostgreSQL 테이블명
+  table-name: chat_sessions
+
+# 로깅 설정
+logging:
+  level:
+    com.example.chat: DEBUG
+    dev.langchain4j: INFO
+    ai.djl: WARN
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
