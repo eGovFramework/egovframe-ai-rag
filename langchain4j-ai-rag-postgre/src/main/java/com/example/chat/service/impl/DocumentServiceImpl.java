@@ -17,10 +17,11 @@ import org.egovframe.rte.fdl.cmmn.EgovAbstractServiceImpl;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -134,7 +135,7 @@ public class DocumentServiceImpl extends EgovAbstractServiceImpl implements Docu
 
                 processedCount.set(transformedDocuments.size());
                 log.info("문서 처리 완료: {}개 문서 처리됨 (원본: {}개 → 청크: {}개)",
-                    transformedDocuments.size(), changedDocuments.size(), transformedDocuments.size());
+                        transformedDocuments.size(), changedDocuments.size(), transformedDocuments.size());
 
                 return transformedDocuments.size();
 
@@ -166,7 +167,14 @@ public class DocumentServiceImpl extends EgovAbstractServiceImpl implements Docu
         long totalSize = 0;
         int uploaded = 0;
         for (MultipartFile file : files) {
-            String filename = StringUtils.cleanPath(file.getOriginalFilename());
+            String originalFilename = file.getOriginalFilename();
+            if (originalFilename == null || originalFilename.isBlank()) {
+                result.put("success", false);
+                result.put("message", "파일명이 없습니다.");
+                result.putIfAbsent("files", Collections.emptyList());
+                return result;
+            }
+            String filename = Paths.get(originalFilename).getFileName().toString();
             if (!filename.endsWith(".md")) {
                 result.put("success", false);
                 result.put("message", "마크다운(.md) 파일만 업로드 가능합니다.");
@@ -195,12 +203,19 @@ public class DocumentServiceImpl extends EgovAbstractServiceImpl implements Docu
         if (!dir.exists())
             dir.mkdirs();
         for (MultipartFile file : files) {
-            String filename = StringUtils.cleanPath(file.getOriginalFilename());
+            String filename = Paths.get(file.getOriginalFilename()).getFileName().toString();
             File dest = new File(dir, filename);
             try {
+                // 경로 탐색(Path Traversal) 방어: 저장 경로가 허용된 디렉토리 내인지 검증
+                if (!dest.getCanonicalPath().startsWith(dir.getCanonicalPath() + File.separator)) {
+                    result.put("success", false);
+                    result.put("message", "허용되지 않는 파일 경로입니다: " + filename);
+                    result.putIfAbsent("files", Collections.emptyList());
+                    return result;
+                }
                 file.transferTo(dest);
                 uploaded++;
-            } catch (Exception e) {
+            } catch (IOException e) {
                 result.put("success", false);
                 result.put("message", filename + " 저장 실패: " + e.getMessage());
                 return result;
@@ -230,10 +245,10 @@ public class DocumentServiceImpl extends EgovAbstractServiceImpl implements Docu
 
         // 비동기 완료 후 로그 처리
         future.thenAccept(count -> log.info("재인덱싱 완료: {}개 청크 처리됨", count))
-              .exceptionally(throwable -> {
-                  log.error("재인덱싱 중 오류 발생", throwable);
-                  return null;
-              });
+                .exceptionally(throwable -> {
+                    log.error("재인덱싱 중 오류 발생", throwable);
+                    return null;
+                });
 
         log.info("비동기 재인덱싱 요청 성공");
         return "문서 재인덱싱이 처리되었습니다.";
