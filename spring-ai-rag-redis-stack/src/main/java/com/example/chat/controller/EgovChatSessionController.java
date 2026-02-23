@@ -32,12 +32,12 @@ import java.util.List;
 @CrossOrigin(origins = "*")
 public class EgovChatSessionController {
 
-    private final EgovChatSessionService chatSessionService;
+    private final EgovChatSessionService egovChatSessionService;
 
     @PostMapping
     public ResponseEntity<ChatSession> createNewSession() {
         try {
-            ChatSession session = chatSessionService.createNewSession();
+            ChatSession session = egovChatSessionService.createNewSession();
             log.info("새 채팅 세션 생성됨: {}", session.getSessionId());
             return ResponseEntity.ok(session);
         } catch (Exception e) {
@@ -49,7 +49,7 @@ public class EgovChatSessionController {
     @GetMapping
     public ResponseEntity<List<ChatSession>> getAllSessions() {
         try {
-            List<ChatSession> sessions = chatSessionService.getAllSessions();
+            List<ChatSession> sessions = egovChatSessionService.getAllSessions();
             log.debug("세션 목록 조회: {} 개", sessions.size());
             return ResponseEntity.ok(sessions);
         } catch (Exception e) {
@@ -61,20 +61,20 @@ public class EgovChatSessionController {
     @GetMapping("/{sessionId}/messages")
     public ResponseEntity<List<ChatMessageDto>> getSessionMessages(@PathVariable String sessionId) {
         try {
-            if (!chatSessionService.sessionExists(sessionId)) {
+            if (!egovChatSessionService.sessionExists(sessionId)) {
                 log.warn("존재하지 않는 세션 ID: {}", sessionId);
                 return ResponseEntity.notFound().build();
             }
 
-            List<Message> messages = chatSessionService.getSessionMessages(sessionId);
+            List<Message> messages = egovChatSessionService.getSessionMessages(sessionId);
             log.debug("세션 {} 메시지 조회 결과: {} 개의 메시지", sessionId, messages.size());
-            
+
             // Spring AI Message를 ChatMessageDto로 변환
             List<ChatMessageDto> messageDtos = messages.stream()
                     .map(message -> {
                         String messageTypeStr = message.getMessageType().name();
                         String content;
-                        
+
                         // Message 타입별로 실제 텍스트 내용 추출
                         if (message instanceof UserMessage) {
                             UserMessage userMsg = (UserMessage) message;
@@ -94,11 +94,11 @@ public class EgovChatSessionController {
                                 content = "메시지 내용을 가져올 수 없습니다";
                             }
                         }
-                        
+
                         return new ChatMessageDto(messageTypeStr, content);
                     })
                     .collect(Collectors.toList());
-            
+
             log.debug("세션 메시지 조회: {} - {} 개 메시지", sessionId, messageDtos.size());
             return ResponseEntity.ok(messageDtos);
         } catch (Exception e) {
@@ -109,15 +109,15 @@ public class EgovChatSessionController {
 
     @PutMapping("/{sessionId}/title")
     public ResponseEntity<Void> updateSessionTitle(
-            @PathVariable String sessionId, 
+            @PathVariable String sessionId,
             @RequestBody UpdateTitleRequest request) {
         try {
-            if (!chatSessionService.sessionExists(sessionId)) {
+            if (!egovChatSessionService.sessionExists(sessionId)) {
                 log.warn("존재하지 않는 세션 ID: {}", sessionId);
                 return ResponseEntity.notFound().build();
             }
 
-            chatSessionService.updateSessionTitle(sessionId, request.getTitle());
+            egovChatSessionService.updateSessionTitle(sessionId, request.getTitle());
             log.info("세션 제목 업데이트: {} -> {}", sessionId, request.getTitle());
             return ResponseEntity.ok().build();
         } catch (Exception e) {
@@ -129,12 +129,12 @@ public class EgovChatSessionController {
     @DeleteMapping("/{sessionId}")
     public ResponseEntity<Void> deleteSession(@PathVariable String sessionId) {
         try {
-            if (!chatSessionService.sessionExists(sessionId)) {
+            if (!egovChatSessionService.sessionExists(sessionId)) {
                 log.warn("존재하지 않는 세션 ID: {}", sessionId);
                 return ResponseEntity.notFound().build();
             }
 
-            chatSessionService.deleteSession(sessionId);
+            egovChatSessionService.deleteSession(sessionId);
             log.info("세션 삭제: {}", sessionId);
             return ResponseEntity.ok().build();
         } catch (Exception e) {
@@ -146,7 +146,8 @@ public class EgovChatSessionController {
     public static class UpdateTitleRequest {
         private String title;
 
-        public UpdateTitleRequest() {}
+        public UpdateTitleRequest() {
+        }
 
         public UpdateTitleRequest(String title) {
             this.title = title;

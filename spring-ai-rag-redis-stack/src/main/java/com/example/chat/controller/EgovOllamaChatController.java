@@ -33,8 +33,8 @@ import reactor.core.publisher.Flux;
 public class EgovOllamaChatController {
 
     private final OllamaChatModel chatModel;
-    private final EgovSessionAwareChatService sessionAwareChatService;
-    private final EgovChatSessionService chatSessionService;
+    private final EgovSessionAwareChatService egovSessionAwareChatService;
+    private final EgovChatSessionService egovChatSessionService;
 
     /**
      * 일반 응답 생성 (테스트용)
@@ -64,24 +64,24 @@ public class EgovOllamaChatController {
             @RequestParam(value = "model", required = false) String model,
             @RequestParam(value = "sessionId", required = false) String sessionId) {
         log.info("RAG 기반 스트리밍 질의 수신: {}, 모델: {}, 세션: {}", message, model, sessionId);
-        
+
         // 세션 컨텍스트 설정
         if (sessionId != null && !sessionId.isEmpty()) {
             log.debug("세션 ID 검증 시작: {}", sessionId);
-            if (chatSessionService.sessionExists(sessionId)) {
+            if (egovChatSessionService.sessionExists(sessionId)) {
                 log.debug("유효한 세션 ID 확인: {}", sessionId);
                 SessionContext.setCurrentSessionId(sessionId);
-                
+
                 // 첫 메시지인 경우 세션 제목 업데이트
-                List<Message> history = chatSessionService.getSessionMessages(sessionId);
+                List<Message> history = egovChatSessionService.getSessionMessages(sessionId);
                 if (history.isEmpty()) {
                     log.debug("첫 메시지로 판단, 세션 제목 생성: {}", sessionId);
-                    String title = chatSessionService.generateSessionTitle(message);
-                    chatSessionService.updateSessionTitle(sessionId, title);
+                    String title = egovChatSessionService.generateSessionTitle(message);
+                    egovChatSessionService.updateSessionTitle(sessionId, title);
                 } else {
                     log.debug("기존 세션 메시지 발견: {} - {} 개", sessionId, history.size());
                     // 마지막 메시지 시간 업데이트
-                    chatSessionService.updateLastMessageTime(sessionId);
+                    egovChatSessionService.updateLastMessageTime(sessionId);
                 }
             } else {
                 log.warn("존재하지 않는 세션 ID: {}, 기본 세션으로 처리", sessionId);
@@ -93,11 +93,11 @@ public class EgovOllamaChatController {
             // 세션 ID가 없는 경우 기본 세션으로 처리
             SessionContext.setCurrentSessionId(ChatMemory.DEFAULT_CONVERSATION_ID);
         }
-        
+
         String currentSessionId = SessionContext.getCurrentSessionId();
         log.debug("현재 세션 컨텍스트 설정됨: {}", currentSessionId);
-        
-        return sessionAwareChatService.streamRagResponse(message, model)
+
+        return egovSessionAwareChatService.streamRagResponse(message, model)
                 .doFinally(signalType -> {
                     // 스트리밍 완료 후 컨텍스트 정리
                     SessionContext.clear();
@@ -114,20 +114,20 @@ public class EgovOllamaChatController {
             @RequestParam(value = "model", required = false) String model,
             @RequestParam(value = "sessionId", required = false) String sessionId) {
         log.info("일반 스트리밍 질의 수신: {}, 모델: {}, 세션: {}", message, model, sessionId);
-        
+
         // 세션 컨텍스트 설정
         if (sessionId != null && !sessionId.isEmpty()) {
-            if (chatSessionService.sessionExists(sessionId)) {
+            if (egovChatSessionService.sessionExists(sessionId)) {
                 SessionContext.setCurrentSessionId(sessionId);
-                
+
                 // 첫 메시지인 경우 세션 제목 업데이트
-                List<Message> history = chatSessionService.getSessionMessages(sessionId);
+                List<Message> history = egovChatSessionService.getSessionMessages(sessionId);
                 if (history.isEmpty()) {
-                    String title = chatSessionService.generateSessionTitle(message);
-                    chatSessionService.updateSessionTitle(sessionId, title);
+                    String title = egovChatSessionService.generateSessionTitle(message);
+                    egovChatSessionService.updateSessionTitle(sessionId, title);
                 } else {
                     // 마지막 메시지 시간 업데이트
-                    chatSessionService.updateLastMessageTime(sessionId);
+                    egovChatSessionService.updateLastMessageTime(sessionId);
                 }
             } else {
                 log.warn("존재하지 않는 세션 ID: {}, 기본 세션으로 처리", sessionId);
@@ -138,9 +138,9 @@ public class EgovOllamaChatController {
             // 세션 ID가 없는 경우 기본 세션으로 처리
             SessionContext.setCurrentSessionId(ChatMemory.DEFAULT_CONVERSATION_ID);
         }
-        
+
         // 일반 스트리밍 응답 생성 (RAG 없이)
-        return sessionAwareChatService.streamSimpleResponse(message, model)
+        return egovSessionAwareChatService.streamSimpleResponse(message, model)
                 .doFinally(signalType -> {
                     // 스트리밍 완료 후 컨텍스트 정리
                     SessionContext.clear();
@@ -280,14 +280,16 @@ public class EgovOllamaChatController {
     public Map<String, String> dynamicFewShot(
             @RequestParam(value = "message", defaultValue = "React의 특징은?") String message,
             @RequestParam(value = "context", defaultValue = "Spring Boot is a Java-based framework for developing web applications.") String context) {
-        
+
         // 동적 예시 생성
         List<Map.Entry<String, String>> examples = Arrays.asList(
-            Map.entry("What is Spring Boot?", "Spring Boot is a Java-based framework for developing web applications."),
-            Map.entry("How does Spring Boot work?", "Spring Boot uses auto-configuration and embedded servers to simplify development."),
-            Map.entry("What are the benefits of Spring Boot?", "Spring Boot reduces boilerplate code and provides rapid development capabilities.")
-        );
-        
+                Map.entry("What is Spring Boot?",
+                        "Spring Boot is a Java-based framework for developing web applications."),
+                Map.entry("How does Spring Boot work?",
+                        "Spring Boot uses auto-configuration and embedded servers to simplify development."),
+                Map.entry("What are the benefits of Spring Boot?",
+                        "Spring Boot reduces boilerplate code and provides rapid development capabilities."));
+
         String prompt = EgovPromptEngineeringUtil.createDynamicFewShotPrompt(context, examples);
         String fullPrompt = prompt + "\n\nQuestion: " + message;
         return Map.of("generation", this.chatModel.call(fullPrompt));
@@ -300,17 +302,16 @@ public class EgovOllamaChatController {
     public Map<String, Object> comparePrompts(
             @RequestParam(value = "message", defaultValue = "Docker의 장점은?") String message,
             @RequestParam(value = "context", defaultValue = "Spring Boot is a Java-based framework for developing web applications.") String context) {
-        
+
         String zeroShotPrompt = EgovPromptEngineeringUtil.createContextBasedPrompt(context);
         String fewShotPrompt = EgovPromptEngineeringUtil.createFewShotLearningPrompt(context);
-        
+
         String zeroShotFull = zeroShotPrompt + "\n\nQuestion: " + message;
         String fewShotFull = fewShotPrompt + "\n\nQuestion: " + message;
-        
+
         return Map.of(
-            "zeroShot", this.chatModel.call(zeroShotFull),
-            "fewShot", this.chatModel.call(fewShotFull)
-        );
+                "zeroShot", this.chatModel.call(zeroShotFull),
+                "fewShot", this.chatModel.call(fewShotFull));
     }
 
     // ===== JSON 구조화된 출력 테스트 엔드포인트들 =====
@@ -321,7 +322,7 @@ public class EgovOllamaChatController {
     @GetMapping("/ai/json/technology")
     public TechnologyResponse getTechnologyInfoAsJson(
             @RequestParam(value = "query", defaultValue = "Spring Boot에 대해 설명해주세요") String query) {
-        return sessionAwareChatService.getTechnologyInfoAsJson(query);
+        return egovSessionAwareChatService.getTechnologyInfoAsJson(query);
     }
 
     /**
@@ -333,17 +334,16 @@ public class EgovOllamaChatController {
         try {
             String jsonPrompt = EgovJsonPromptTemplates.createTechnologyInfoPrompt(query);
             String rawResponse = chatModel.call(jsonPrompt);
-            
+
             // 응답 정리 테스트
             String cleanedJson = EgovResponseCleanerUtil.cleanResponse(rawResponse);
-            
+
             return Map.of(
-                "originalQuery", query,
-                "jsonPrompt", jsonPrompt,
-                "rawResponse", rawResponse,
-                "cleanedJson", cleanedJson,
-                "hasThinkTag", String.valueOf(rawResponse.contains("<think>"))
-            );
+                    "originalQuery", query,
+                    "jsonPrompt", jsonPrompt,
+                    "rawResponse", rawResponse,
+                    "cleanedJson", cleanedJson,
+                    "hasThinkTag", String.valueOf(rawResponse.contains("<think>")));
         } catch (Exception e) {
             return Map.of("error", e.getMessage());
         }

@@ -20,16 +20,16 @@ import lombok.extern.slf4j.Slf4j;
 @CrossOrigin
 public class EgovDocumentController {
 
-    private final EgovDocumentService documentService;
+    private final EgovDocumentService egovDocumentService;
 
     @GetMapping("/status")
     public DocumentStatusResponse getStatus() {
-        return documentService.getStatusResponse();
+        return egovDocumentService.getStatusResponse();
     }
 
     @PostMapping("/reindex")
     public String reindexDocuments() {
-        return documentService.reindexDocuments();
+        return egovDocumentService.reindexDocuments();
     }
 
     /**
@@ -37,7 +37,7 @@ public class EgovDocumentController {
      */
     @PostMapping("/upload")
     public ResponseEntity<Map<String, Object>> uploadMarkdownFiles(@RequestParam("files") MultipartFile[] files) {
-        Map<String, Object> result = documentService.uploadMarkdownFiles(files);
+        Map<String, Object> result = egovDocumentService.uploadMarkdownFiles(files);
         boolean success = Boolean.TRUE.equals(result.get("success"));
         if (success) {
             return ResponseEntity.ok(result);

@@ -15,8 +15,8 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class SpringAiOllamaApplication {
 
-    private final EgovDocumentService documentService;
-    
+    private final EgovDocumentService egovDocumentService;
+
     public static void main(String[] args) {
         SpringApplication.run(SpringAiOllamaApplication.class, args);
     }
@@ -24,8 +24,8 @@ public class SpringAiOllamaApplication {
     @EventListener(ApplicationReadyEvent.class)
     public void initializeDocuments() {
         log.info("문서 인덱싱을 비동기적으로 시작합니다...");
-        
-        documentService.loadDocumentsAsync()
+
+        egovDocumentService.loadDocumentsAsync()
                 .thenAccept(count -> {
                     if (count == 0) {
                         log.info("처리할 문서가 없습니다. 웹 인터페이스에서 문서를 업로드하거나 '문서 로드' 버튼을 클릭하세요.");
