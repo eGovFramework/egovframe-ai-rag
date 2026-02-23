@@ -226,34 +226,59 @@ Flux<String> 스트리밍 응답
 langchain4j-ai-rag-postgre/
 ├── src/main/java/com/example/chat/
 │   ├── config/                      # 설정 클래스
-│   │   ├── LangChain4jConfig.java   # LLM, 임베딩, 벡터스토어 설정
-│   │   └── RagConfig.java           # ContentRetriever 설정
+│   │   ├── EgovAsyncConfig.java     # 비동기 설정
+│   │   ├── EgovEmbeddingConfig.java # 임베딩 설정
+│   │   ├── EgovLangChain4jConfig.java # LLM, 임베딩, 벡터스토어 설정
+│   │   ├── EgovRagConfig.java       # ContentRetriever 설정
+│   │   ├── EgovCommonConfig.java    # 공통 설정
+│   │   └── etl/                     # 문서 ETL 파이프라인
+│   │       ├── readers/
+│   │       │   ├── EgovMarkdownReader.java   # 마크다운 문서 리더
+│   │       │   └── EgovPdfReader.java       # PDF 문서 리더
+│   │       ├── transformers/
+│   │       │   ├── EgovContentFormatTransformer.java   # 콘텐츠 포맷 변환
+│   │       │   └── EgovEnhancedDocumentTransformer.java # 문서 변환
+│   │       └── writers/
+│   │           └── EgovVectorStoreWriter.java # 벡터스토어 저장
 │   │
 │   ├── service/                     # 서비스 계층
 │   │   ├── RagChatbot.java          # RAG 챗봇 인터페이스 (AiServices)
 │   │   ├── SimpleChatbot.java       # 일반 챗봇 인터페이스 (AiServices)
 │   │   ├── ChatbotFactory.java      # 챗봇 팩토리 (동적 모델 + 메모리)
-│   │   ├── ChatService.java         # 채팅 서비스 인터페이스
+│   │   ├── EgovChatService.java     # 채팅 서비스 인터페이스
+│   │   ├── EgovChatSessionService.java # 세션 서비스 인터페이스
+│   │   ├── EgovDocumentService.java # 문서 서비스 인터페이스
+│   │   ├── EgovOllamaModelService.java # Ollama 모델 서비스 인터페이스
 │   │   └── impl/
-│   │       └── ChatServiceImpl.java # 채팅 서비스 구현체
+│   │       ├── EgovChatServiceImpl.java
+│   │       ├── EgovChatSessionServiceImpl.java
+│   │       ├── EgovDocumentServiceImpl.java
+│   │       └── EgovOllamaModelServiceImpl.java
 │   │
 │   ├── repository/                  # 데이터 접근 계층
 │   │   ├── ChatMemoryRepository.java        # JPA Repository
+│   │   ├── DocumentHashRepository.java      # 문서 해시 Repository
+│   │   ├── ChatSessionRepository.java       # 세션 Repository
 │   │   └── PersistentChatMemoryStore.java   # ChatMemoryStore 구현
 │   │
 │   ├── entity/                      # JPA 엔티티
 │   │   ├── ChatMemoryEntity.java    # 채팅 메모리 엔티티
-│   │   └── ChatSessionEntity.java   # 세션 엔티티
+│   │   ├── ChatSessionEntity.java   # 세션 엔티티
+│   │   └── DocumentHashEntity.java  # 문서 해시 엔티티
 │   │
 │   ├── controller/                  # REST 컨트롤러
-│   │   ├── ChatController.java      # 채팅 API
-│   │   ├── ChatSessionController.java # 세션 API
-│   │   └── DocumentController.java  # 문서 API
+│   │   ├── EgovChatController.java      # 채팅 API
+│   │   ├── EgovChatSessionController.java # 세션 API
+│   │   ├── EgovDocumentController.java  # 문서 API
+│   │   ├── EgovOllamaModelController.java # Ollama 모델 API
+│   │   ├── EgovPromptTestController.java  # 프롬프트 테스트 API
+│   │   └── EgovWebController.java        # 웹 페이지
 │   │
 │   ├── context/                     # 세션 컨텍스트
 │   │   └── SessionContext.java      # ThreadLocal 세션 관리
 │   │
 │   ├── dto/                         # DTO
+│   ├── response/                    # API 응답 DTO
 │   └── util/                        # 유틸리티
 │
 ├── src/main/resources/
