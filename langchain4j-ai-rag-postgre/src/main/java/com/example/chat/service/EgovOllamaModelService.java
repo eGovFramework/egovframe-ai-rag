@@ -5,7 +5,7 @@ import java.util.List;
 /**
  * Ollama 모델 관리 서비스 인터페이스
  */
-public interface OllamaModelService {
+public interface EgovOllamaModelService {
 
     /**
      * 설치된 Ollama 모델 목록 조회

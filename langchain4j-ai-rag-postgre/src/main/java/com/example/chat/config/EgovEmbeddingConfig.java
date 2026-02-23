@@ -9,7 +9,7 @@ import lombok.Setter;
  */
 @Getter
 @Setter
-public class EmbeddingConfig {
+public class EgovEmbeddingConfig {
     /**
      * ONNX 모델 파일 경로
      */

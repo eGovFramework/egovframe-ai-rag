@@ -1,6 +1,6 @@
 package com.example.chat.controller;
 
-import com.example.chat.service.OllamaModelService;
+import com.example.chat.service.EgovOllamaModelService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,9 +20,9 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/ollama")
 @RequiredArgsConstructor
-public class OllamaModelController {
+public class EgovOllamaModelController {
 
-    private final OllamaModelService ollamaModelService;
+    private final EgovOllamaModelService egovOllamaModelService;
 
     @Value("${langchain4j.ollama.chat-model.model-name}")
     private String defaultModel;
@@ -40,12 +40,12 @@ public class OllamaModelController {
 
         try {
             // Ollama 사용 가능 여부 확인
-            boolean isAvailable = ollamaModelService.isOllamaAvailable();
+            boolean isAvailable = egovOllamaModelService.isOllamaAvailable();
             response.put("available", isAvailable);
 
             if (isAvailable) {
                 // 설치된 모델 목록 조회
-                List<String> models = ollamaModelService.getInstalledModels();
+                List<String> models = egovOllamaModelService.getInstalledModels();
                 response.put("models", models);
                 response.put("count", models.size());
                 response.put("defaultModel", defaultModel);

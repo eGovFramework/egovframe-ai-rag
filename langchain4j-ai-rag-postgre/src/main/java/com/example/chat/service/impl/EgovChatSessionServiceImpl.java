@@ -6,7 +6,7 @@ import com.example.chat.entity.ChatMemoryEntity;
 import com.example.chat.entity.ChatSessionEntity;
 import com.example.chat.repository.ChatMemoryRepository;
 import com.example.chat.repository.ChatSessionRepository;
-import com.example.chat.service.ChatSessionService;
+import com.example.chat.service.EgovChatSessionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.egovframe.rte.fdl.cmmn.EgovAbstractServiceImpl;
@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class ChatSessionServiceImpl extends EgovAbstractServiceImpl implements ChatSessionService {
+public class EgovChatSessionServiceImpl extends EgovAbstractServiceImpl implements EgovChatSessionService {
 
     private final ChatSessionRepository chatSessionRepository;
     private final ChatMemoryRepository chatMemoryRepository;
@@ -53,8 +53,7 @@ public class ChatSessionServiceImpl extends EgovAbstractServiceImpl implements C
                         entity.getSessionId(),
                         entity.getTitle(),
                         entity.getCreatedAt(),
-                        entity.getUpdatedAt()
-                ))
+                        entity.getUpdatedAt()))
                 .collect(Collectors.toList());
     }
 
@@ -66,12 +65,11 @@ public class ChatSessionServiceImpl extends EgovAbstractServiceImpl implements C
         // USER와 ASSISTANT 메시지만 반환 (SYSTEM 메시지 제외)
         return entities.stream()
                 .filter(entity -> "USER".equals(entity.getMessageType()) ||
-                               "ASSISTANT".equals(entity.getMessageType()))
+                        "ASSISTANT".equals(entity.getMessageType()))
                 .map(entity -> new ChatMessageDto(
                         entity.getMessageType(),
                         entity.getContent(),
-                        entity.getCreatedAt()
-                ))
+                        entity.getCreatedAt()))
                 .collect(Collectors.toList());
     }
 

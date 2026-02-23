@@ -1,7 +1,7 @@
 package com.example.chat.service.impl;
 
 import com.example.chat.context.SessionContext;
-import com.example.chat.service.ChatService;
+import com.example.chat.service.EgovChatService;
 import com.example.chat.service.ChatbotFactory;
 import com.example.chat.service.RagChatbot;
 import com.example.chat.service.SimpleChatbot;
@@ -20,7 +20,7 @@ import reactor.core.publisher.Flux;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class ChatServiceImpl extends EgovAbstractServiceImpl implements ChatService {
+public class EgovChatServiceImpl extends EgovAbstractServiceImpl implements EgovChatService {
 
     private final ChatbotFactory chatbotFactory;
 

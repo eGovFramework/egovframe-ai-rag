@@ -9,7 +9,7 @@ import java.util.List;
  * 채팅 세션 관리 서비스 인터페이스
  * 세션 생성, 조회, 삭제 및 메시지 관리 기능 제공
  */
-public interface ChatSessionService {
+public interface EgovChatSessionService {
 
     /**
      * 새로운 채팅 세션을 생성
@@ -37,7 +37,7 @@ public interface ChatSessionService {
      * 세션의 제목을 업데이트
      *
      * @param sessionId 세션 ID
-     * @param title 새로운 제목
+     * @param title     새로운 제목
      */
     void updateSessionTitle(String sessionId, String title);
 

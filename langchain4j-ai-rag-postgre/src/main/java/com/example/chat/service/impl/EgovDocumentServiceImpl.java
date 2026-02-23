@@ -1,14 +1,14 @@
 package com.example.chat.service.impl;
 
-import com.example.chat.config.etl.readers.MarkdownDocumentReader;
-import com.example.chat.config.etl.readers.PdfDocumentReader;
-import com.example.chat.config.etl.transformers.ContentFormatTransformer;
-import com.example.chat.config.etl.transformers.EnhancedDocumentTransformer;
-import com.example.chat.config.etl.writers.VectorStoreWriter;
+import com.example.chat.config.etl.readers.EgovMarkdownReader;
+import com.example.chat.config.etl.readers.EgovPdfReader;
+import com.example.chat.config.etl.transformers.EgovContentFormatTransformer;
+import com.example.chat.config.etl.transformers.EgovEnhancedDocumentTransformer;
+import com.example.chat.config.etl.writers.EgovVectorStoreWriter;
 import com.example.chat.entity.DocumentHashEntity;
 import com.example.chat.repository.DocumentHashRepository;
 import com.example.chat.response.DocumentStatusResponse;
-import com.example.chat.service.DocumentService;
+import com.example.chat.service.EgovDocumentService;
 import com.example.chat.util.DocumentHashUtil;
 import dev.langchain4j.data.document.Document;
 import lombok.RequiredArgsConstructor;
@@ -31,17 +31,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class DocumentServiceImpl extends EgovAbstractServiceImpl implements DocumentService {
+public class EgovDocumentServiceImpl extends EgovAbstractServiceImpl implements EgovDocumentService {
 
     @Value("${document.path}")
     private String documentPath;
 
     // ETL 파이프라인 컴포넌트들
-    private final MarkdownDocumentReader markdownReader;
-    private final PdfDocumentReader pdfReader;
-    private final ContentFormatTransformer contentFormatTransformer;
-    private final EnhancedDocumentTransformer enhancedDocumentTransformer;
-    private final VectorStoreWriter vectorStoreWriter;
+    private final EgovMarkdownReader egovMarkdownReader;
+    private final EgovPdfReader egovPdfReader;
+    private final EgovContentFormatTransformer egovContentFormatTransformer;
+    private final EgovEnhancedDocumentTransformer egovEnhancedDocumentTransformer;
+    private final EgovVectorStoreWriter egovVectorStoreWriter;
 
     // Repository
     private final DocumentHashRepository documentHashRepository;
@@ -91,8 +91,8 @@ public class DocumentServiceImpl extends EgovAbstractServiceImpl implements Docu
         return CompletableFuture.supplyAsync(() -> {
             try {
                 // 1단계: 마크다운과 PDF 문서 읽기
-                List<Document> markdownDocuments = markdownReader.read();
-                List<Document> pdfDocuments = pdfReader.read();
+                List<Document> markdownDocuments = egovMarkdownReader.read();
+                List<Document> pdfDocuments = egovPdfReader.read();
 
                 List<Document> allDocuments = new ArrayList<>();
                 allDocuments.addAll(markdownDocuments);
@@ -115,17 +115,17 @@ public class DocumentServiceImpl extends EgovAbstractServiceImpl implements Docu
 
                 // 3단계: 문서 형식 정규화 (ContentFormatTransformer)
                 log.info("문서 형식 정규화 시작");
-                List<Document> normalizedDocuments = contentFormatTransformer.transformAll(changedDocuments);
+                List<Document> normalizedDocuments = egovContentFormatTransformer.transformAll(changedDocuments);
                 log.info("문서 형식 정규화 완료: {}개 문서", normalizedDocuments.size());
 
                 // 4단계: 문서 변환 (청크 분할, 메타데이터 추가)
                 log.info("문서 변환 시작");
-                List<Document> transformedDocuments = enhancedDocumentTransformer.transformAll(normalizedDocuments);
+                List<Document> transformedDocuments = egovEnhancedDocumentTransformer.transformAll(normalizedDocuments);
                 log.info("문서 변환 완료: {}개 청크 생성", transformedDocuments.size());
 
                 // 5단계: 벡터 저장소에 저장
                 log.info("벡터 저장소 저장 시작");
-                vectorStoreWriter.write(transformedDocuments);
+                egovVectorStoreWriter.write(transformedDocuments);
                 log.info("벡터 저장소 저장 완료");
 
                 // 6단계: 처리된 문서 해시 저장

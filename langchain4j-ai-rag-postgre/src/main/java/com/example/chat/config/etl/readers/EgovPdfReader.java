@@ -21,7 +21,7 @@ import java.util.List;
  */
 @Slf4j
 @Component
-public class PdfDocumentReader {
+public class EgovPdfReader {
 
     @Value("${document.pdf-path}")
     private String pdfDocumentPath;
@@ -53,7 +53,7 @@ public class PdfDocumentReader {
                 try {
                     List<Document> documents = parsePdfDocument(resource);
                     log.info("PDF 파일 '{}'에서 {}개의 문서를 읽었습니다.",
-                        resource.getFilename(), documents.size());
+                            resource.getFilename(), documents.size());
 
                     allDocuments.addAll(documents);
 

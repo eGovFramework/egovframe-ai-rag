@@ -3,8 +3,8 @@ package com.example.chat.controller;
 import com.example.chat.context.SessionContext;
 import com.example.chat.dto.ChatMessageDto;
 import com.example.chat.dto.StreamTokenDto;
-import com.example.chat.service.ChatService;
-import com.example.chat.service.ChatSessionService;
+import com.example.chat.service.EgovChatService;
+import com.example.chat.service.EgovChatSessionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,10 +17,10 @@ import java.util.List;
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-public class ChatController {
+public class EgovChatController {
 
-    private final ChatService chatService;
-    private final ChatSessionService chatSessionService;
+    private final EgovChatService egovChatService;
+    private final EgovChatSessionService egovChatSessionService;
 
     /**
      * RAG 기반 스트리밍 응답 생성
@@ -35,20 +35,20 @@ public class ChatController {
         // 세션 컨텍스트 설정
         if (sessionId != null && !sessionId.isEmpty()) {
             log.debug("세션 ID 검증 시작: {}", sessionId);
-            if (chatSessionService.sessionExists(sessionId)) {
+            if (egovChatSessionService.sessionExists(sessionId)) {
                 log.debug("유효한 세션 ID 확인: {}", sessionId);
                 SessionContext.setCurrentSessionId(sessionId);
 
                 // 첫 메시지인 경우 세션 제목 업데이트
-                List<ChatMessageDto> history = chatSessionService.getSessionMessages(sessionId);
+                List<ChatMessageDto> history = egovChatSessionService.getSessionMessages(sessionId);
                 if (history.isEmpty()) {
                     log.debug("첫 메시지로 판단, 세션 제목 생성: {}", sessionId);
-                    String title = chatSessionService.generateSessionTitle(message);
-                    chatSessionService.updateSessionTitle(sessionId, title);
+                    String title = egovChatSessionService.generateSessionTitle(message);
+                    egovChatSessionService.updateSessionTitle(sessionId, title);
                 } else {
                     log.debug("기존 세션 메시지 발견: {} - {} 개", sessionId, history.size());
                     // 마지막 메시지 시간 업데이트
-                    chatSessionService.updateLastMessageTime(sessionId);
+                    egovChatSessionService.updateLastMessageTime(sessionId);
                 }
             } else {
                 log.warn("존재하지 않는 세션 ID: {}, 기본 세션으로 처리", sessionId);
@@ -64,7 +64,7 @@ public class ChatController {
         String currentSessionId = SessionContext.getCurrentSessionId();
         log.debug("현재 세션 컨텍스트 설정됨: {}", currentSessionId);
 
-        return chatService.streamRagResponse(message, model)
+        return egovChatService.streamRagResponse(message, model)
                 .map(StreamTokenDto::new)
                 .doFinally(signalType -> {
                     // 스트리밍 완료 후 컨텍스트 정리
@@ -85,17 +85,17 @@ public class ChatController {
 
         // 세션 컨텍스트 설정
         if (sessionId != null && !sessionId.isEmpty()) {
-            if (chatSessionService.sessionExists(sessionId)) {
+            if (egovChatSessionService.sessionExists(sessionId)) {
                 SessionContext.setCurrentSessionId(sessionId);
 
                 // 첫 메시지인 경우 세션 제목 업데이트
-                List<ChatMessageDto> history = chatSessionService.getSessionMessages(sessionId);
+                List<ChatMessageDto> history = egovChatSessionService.getSessionMessages(sessionId);
                 if (history.isEmpty()) {
-                    String title = chatSessionService.generateSessionTitle(message);
-                    chatSessionService.updateSessionTitle(sessionId, title);
+                    String title = egovChatSessionService.generateSessionTitle(message);
+                    egovChatSessionService.updateSessionTitle(sessionId, title);
                 } else {
                     // 마지막 메시지 시간 업데이트
-                    chatSessionService.updateLastMessageTime(sessionId);
+                    egovChatSessionService.updateLastMessageTime(sessionId);
                 }
             } else {
                 log.warn("존재하지 않는 세션 ID: {}, 기본 세션으로 처리", sessionId);
@@ -108,7 +108,7 @@ public class ChatController {
         }
 
         // 일반 스트리밍 응답 생성 (RAG 없이)
-        return chatService.streamSimpleResponse(message, model)
+        return egovChatService.streamSimpleResponse(message, model)
                 .map(StreamTokenDto::new)
                 .doFinally(signalType -> {
                     // 스트리밍 완료 후 컨텍스트 정리

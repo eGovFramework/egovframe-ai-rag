@@ -19,19 +19,19 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Component
-public class EnhancedDocumentTransformer implements DocumentTransformer {
+public class EgovEnhancedDocumentTransformer implements DocumentTransformer {
 
     private final DocumentSplitter documentSplitter;
 
-    public EnhancedDocumentTransformer(
+    public EgovEnhancedDocumentTransformer(
             @Value("${document.chunk-size}") int chunkSize,
             @Value("${document.min-chunk-size-chars}") int minChunkSizeChars) {
 
         // LangChain4j의 DocumentSplitter 생성
         // 토큰 기반 분할 (최대 토큰 수, 오버랩)
         this.documentSplitter = DocumentSplitters.recursive(
-            chunkSize,  // 최대 토큰 수
-            Math.max(chunkSize / 10, 50)  // 오버랩 (청크 크기의 10%)
+                chunkSize, // 최대 토큰 수
+                Math.max(chunkSize / 10, 50) // 오버랩 (청크 크기의 10%)
         );
 
         log.info("EnhancedDocumentTransformer 초기화 - chunkSize: {}, minChunkSize: {}",

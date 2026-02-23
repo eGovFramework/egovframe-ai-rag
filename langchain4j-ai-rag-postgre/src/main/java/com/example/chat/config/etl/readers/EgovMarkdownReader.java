@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Component
-public class MarkdownDocumentReader {
+public class EgovMarkdownReader {
 
     @Value("${document.path}")
     private String documentPath;

@@ -1,7 +1,7 @@
 package com.example.chat.util;
 
 import com.google.gson.Gson;
-import com.example.chat.config.EmbeddingConfig;
+import com.example.chat.config.EgovEmbeddingConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -26,7 +26,7 @@ public class ConfigUtils {
      *
      * @return 처리된 EmbeddingConfig 객체
      */
-    public EmbeddingConfig loadConfig() {
+    public EgovEmbeddingConfig loadConfig() {
         try {
             // 설정 파일 존재 여부 확인
             java.nio.file.Path path = Paths.get(configPath);
@@ -36,7 +36,7 @@ public class ConfigUtils {
             }
 
             String jsonStr = new String(Files.readAllBytes(path));
-            EmbeddingConfig config = new Gson().fromJson(jsonStr, EmbeddingConfig.class);
+            EgovEmbeddingConfig config = new Gson().fromJson(jsonStr, EgovEmbeddingConfig.class);
 
             // 경로 처리
             if (config.getModelPath() != null) {
@@ -106,6 +106,7 @@ public class ConfigUtils {
 
     /**
      * 경로 구분자를 운영체제에 맞게 정규화
+     * 
      * @param path 정규화할 경로
      * @return 정규화된 경로
      */

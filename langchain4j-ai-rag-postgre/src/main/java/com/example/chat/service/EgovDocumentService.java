@@ -11,7 +11,7 @@ import java.util.Map;
  * 문서 처리 서비스 인터페이스
  * 마크다운 및 PDF 문서를 로드하고 벡터 저장소에 저장하는 기능 제공
  */
-public interface DocumentService {
+public interface EgovDocumentService {
 
     /**
      * 문서를 비동기로 로드하고 벡터 저장소에 저장
@@ -22,8 +22,11 @@ public interface DocumentService {
 
     // 처리 상태 확인 메서드
     boolean isProcessing();
+
     int getProcessedCount();
+
     int getTotalCount();
+
     int getChangedCount();
 
     // 파일 업로드 및 검증/저장

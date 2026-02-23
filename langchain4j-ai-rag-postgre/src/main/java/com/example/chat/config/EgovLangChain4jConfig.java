@@ -28,7 +28,7 @@ import java.time.Duration;
 @Slf4j
 @Configuration
 @RequiredArgsConstructor
-public class LangChain4jConfig implements InitializingBean {
+public class EgovLangChain4jConfig implements InitializingBean {
 
     private final ConfigUtils configUtils;
 
@@ -75,7 +75,7 @@ public class LangChain4jConfig implements InitializingBean {
     @Override
     public void afterPropertiesSet() {
         // 외부 설정 파일에서 모델 경로 로드
-        EmbeddingConfig config = configUtils.loadConfig();
+        EgovEmbeddingConfig config = configUtils.loadConfig();
         if (config != null) {
             this.modelPath = config.getModelPath();
             this.tokenizerPath = config.getTokenizerPath();
@@ -89,10 +89,9 @@ public class LangChain4jConfig implements InitializingBean {
                 // 외부 파일 시스템 경로를 직접 사용 (임시 파일 복사 불필요)
                 log.info("Creating OnnxEmbeddingModel instance...");
                 this.embeddingModel = new OnnxEmbeddingModel(
-                    Paths.get(modelPath),
-                    Paths.get(tokenizerPath),
-                    PoolingMode.MEAN
-                );
+                        Paths.get(modelPath),
+                        Paths.get(tokenizerPath),
+                        PoolingMode.MEAN);
 
                 log.info("ONNX Embedding Model initialized successfully");
                 log.info("Embedding dimension: {}", embeddingModel.dimension());
@@ -174,29 +173,29 @@ public class LangChain4jConfig implements InitializingBean {
 
     private String getLinuxSolution() {
         return """
-            해결 방법:
-            1. 필요한 시스템 라이브러리를 설치하세요:
-               Ubuntu/Debian: sudo apt-get update && sudo apt-get install -y libgomp1
-               CentOS/RHEL: sudo yum install -y libgomp
-            2. 애플리케이션을 다시 실행하세요.
-            """;
+                해결 방법:
+                1. 필요한 시스템 라이브러리를 설치하세요:
+                   Ubuntu/Debian: sudo apt-get update && sudo apt-get install -y libgomp1
+                   CentOS/RHEL: sudo yum install -y libgomp
+                2. 애플리케이션을 다시 실행하세요.
+                """;
     }
 
     private String getMacSolution() {
         return """
-            해결 방법:
-            1. Xcode Command Line Tools를 설치하세요:
-               xcode-select --install
-            2. 애플리케이션을 다시 실행하세요.
-            """;
+                해결 방법:
+                1. Xcode Command Line Tools를 설치하세요:
+                   xcode-select --install
+                2. 애플리케이션을 다시 실행하세요.
+                """;
     }
 
     private String getDefaultSolution() {
         return """
-            해결 방법:
-            1. ONNX Runtime이 지원하는 플랫폼인지 확인하세요.
-            2. 필요한 시스템 라이브러리가 설치되어 있는지 확인하세요.
-            """;
+                해결 방법:
+                1. ONNX Runtime이 지원하는 플랫폼인지 확인하세요.
+                2. 필요한 시스템 라이브러리가 설치되어 있는지 확인하세요.
+                """;
     }
 
     /**
@@ -218,11 +217,11 @@ public class LangChain4jConfig implements InitializingBean {
         log.info("Temperature: {}", ollamaTemperature);
 
         return OllamaChatModel.builder()
-            .baseUrl(ollamaBaseUrl)
-            .modelName(ollamaModelName)
-            .temperature(ollamaTemperature)
-            .timeout(ollamaTimeout)
-            .build();
+                .baseUrl(ollamaBaseUrl)
+                .modelName(ollamaModelName)
+                .temperature(ollamaTemperature)
+                .timeout(ollamaTimeout)
+                .build();
     }
 
     /**
@@ -233,11 +232,11 @@ public class LangChain4jConfig implements InitializingBean {
         log.info("Initializing Ollama Streaming Chat Model...");
 
         return OllamaStreamingChatModel.builder()
-            .baseUrl(ollamaBaseUrl)
-            .modelName(ollamaModelName)
-            .temperature(ollamaTemperature)
-            .timeout(ollamaTimeout)
-            .build();
+                .baseUrl(ollamaBaseUrl)
+                .modelName(ollamaModelName)
+                .temperature(ollamaTemperature)
+                .timeout(ollamaTimeout)
+                .build();
     }
 
     /**
@@ -252,14 +251,14 @@ public class LangChain4jConfig implements InitializingBean {
         log.info("Create table: {}", createTable);
 
         return PgVectorEmbeddingStore.builder()
-            .host(pgvectorHost)
-            .port(pgvectorPort)
-            .database(pgvectorDatabase)
-            .user(pgvectorUsername)
-            .password(pgvectorPassword)
-            .table(pgvectorTableName)
-            .dimension(pgvectorDimension)
-            .createTable(createTable)
-            .build();
+                .host(pgvectorHost)
+                .port(pgvectorPort)
+                .database(pgvectorDatabase)
+                .user(pgvectorUsername)
+                .password(pgvectorPassword)
+                .table(pgvectorTableName)
+                .dimension(pgvectorDimension)
+                .createTable(createTable)
+                .build();
     }
 }

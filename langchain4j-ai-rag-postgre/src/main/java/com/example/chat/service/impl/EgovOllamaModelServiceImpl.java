@@ -1,6 +1,6 @@
 package com.example.chat.service.impl;
 
-import com.example.chat.service.OllamaModelService;
+import com.example.chat.service.EgovOllamaModelService;
 import lombok.extern.slf4j.Slf4j;
 
 import org.egovframe.rte.fdl.cmmn.EgovAbstractServiceImpl;
@@ -17,7 +17,7 @@ import java.util.List;
  */
 @Slf4j
 @Service
-public class OllamaModelServiceImpl extends EgovAbstractServiceImpl implements OllamaModelService {
+public class EgovOllamaModelServiceImpl extends EgovAbstractServiceImpl implements EgovOllamaModelService {
 
     /**
      * 설치된 Ollama 모델 목록 조회
@@ -29,7 +29,7 @@ public class OllamaModelServiceImpl extends EgovAbstractServiceImpl implements O
         List<String> models = new ArrayList<>();
 
         try {
-            String[] command = new String[]{"ollama", "list"};
+            String[] command = new String[] { "ollama", "list" };
             ProcessBuilder processBuilder = new ProcessBuilder(command);
             processBuilder.redirectErrorStream(true);
             setupEnvironment(processBuilder);
@@ -89,7 +89,7 @@ public class OllamaModelServiceImpl extends EgovAbstractServiceImpl implements O
     @Override
     public boolean isOllamaAvailable() {
         try {
-            String[] command = new String[]{"ollama", "--version"};
+            String[] command = new String[] { "ollama", "--version" };
             ProcessBuilder processBuilder = new ProcessBuilder(command);
             processBuilder.redirectErrorStream(true);
             setupEnvironment(processBuilder);

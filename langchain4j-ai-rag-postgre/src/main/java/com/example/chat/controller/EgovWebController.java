@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Controller
 @RequiredArgsConstructor
 @Slf4j
-public class WebController {
+public class EgovWebController {
 
     /**
      * 채팅 페이지 제공

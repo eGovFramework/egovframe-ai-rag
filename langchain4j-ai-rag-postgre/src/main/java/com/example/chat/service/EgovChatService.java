@@ -6,7 +6,7 @@ import reactor.core.publisher.Flux;
  * 세션별 채팅 서비스 인터페이스
  * 세션 기반 RAG 응답과 일반 응답을 생성하는 기능 제공
  */
-public interface ChatService {
+public interface EgovChatService {
 
     /**
      * 세션별 RAG 기반 스트리밍 응답 생성

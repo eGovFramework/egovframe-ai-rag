@@ -2,7 +2,7 @@ package com.example.chat.controller;
 
 import com.example.chat.dto.ChatMessageDto;
 import com.example.chat.dto.ChatSession;
-import com.example.chat.service.ChatSessionService;
+import com.example.chat.service.EgovChatSessionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -15,9 +15,9 @@ import java.util.List;
 @RequestMapping("/api/chat/sessions")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
-public class ChatSessionController {
+public class EgovChatSessionController {
 
-    private final ChatSessionService chatSessionService;
+    private final EgovChatSessionService egovChatSessionService;
 
     /**
      * 새 채팅 세션 생성
@@ -25,7 +25,7 @@ public class ChatSessionController {
     @PostMapping
     public ResponseEntity<ChatSession> createNewSession() {
         try {
-            ChatSession session = chatSessionService.createNewSession();
+            ChatSession session = egovChatSessionService.createNewSession();
             log.info("새 채팅 세션 생성됨: {}", session.getSessionId());
             return ResponseEntity.ok(session);
         } catch (Exception e) {
@@ -40,7 +40,7 @@ public class ChatSessionController {
     @GetMapping
     public ResponseEntity<List<ChatSession>> getAllSessions() {
         try {
-            List<ChatSession> sessions = chatSessionService.getAllSessions();
+            List<ChatSession> sessions = egovChatSessionService.getAllSessions();
             log.debug("세션 목록 조회: {} 개", sessions.size());
             return ResponseEntity.ok(sessions);
         } catch (Exception e) {
@@ -55,12 +55,12 @@ public class ChatSessionController {
     @GetMapping("/{sessionId}/messages")
     public ResponseEntity<List<ChatMessageDto>> getSessionMessages(@PathVariable String sessionId) {
         try {
-            if (!chatSessionService.sessionExists(sessionId)) {
+            if (!egovChatSessionService.sessionExists(sessionId)) {
                 log.warn("존재하지 않는 세션 ID: {}", sessionId);
                 return ResponseEntity.notFound().build();
             }
 
-            List<ChatMessageDto> messages = chatSessionService.getSessionMessages(sessionId);
+            List<ChatMessageDto> messages = egovChatSessionService.getSessionMessages(sessionId);
             log.debug("세션 {} 메시지 조회 결과: {} 개의 메시지", sessionId, messages.size());
 
             return ResponseEntity.ok(messages);
@@ -78,12 +78,12 @@ public class ChatSessionController {
             @PathVariable String sessionId,
             @RequestBody UpdateTitleRequest request) {
         try {
-            if (!chatSessionService.sessionExists(sessionId)) {
+            if (!egovChatSessionService.sessionExists(sessionId)) {
                 log.warn("존재하지 않는 세션 ID: {}", sessionId);
                 return ResponseEntity.notFound().build();
             }
 
-            chatSessionService.updateSessionTitle(sessionId, request.getTitle());
+            egovChatSessionService.updateSessionTitle(sessionId, request.getTitle());
             log.info("세션 제목 업데이트: {} -> {}", sessionId, request.getTitle());
             return ResponseEntity.ok().build();
         } catch (Exception e) {
@@ -98,12 +98,12 @@ public class ChatSessionController {
     @DeleteMapping("/{sessionId}")
     public ResponseEntity<Void> deleteSession(@PathVariable String sessionId) {
         try {
-            if (!chatSessionService.sessionExists(sessionId)) {
+            if (!egovChatSessionService.sessionExists(sessionId)) {
                 log.warn("존재하지 않는 세션 ID: {}", sessionId);
                 return ResponseEntity.notFound().build();
             }
 
-            chatSessionService.deleteSession(sessionId);
+            egovChatSessionService.deleteSession(sessionId);
             log.info("세션 삭제: {}", sessionId);
             return ResponseEntity.ok().build();
         } catch (Exception e) {
@@ -118,7 +118,8 @@ public class ChatSessionController {
     public static class UpdateTitleRequest {
         private String title;
 
-        public UpdateTitleRequest() {}
+        public UpdateTitleRequest() {
+        }
 
         public UpdateTitleRequest(String title) {
             this.title = title;

@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Component
-public class ContentFormatTransformer implements DocumentTransformer {
+public class EgovContentFormatTransformer implements DocumentTransformer {
 
     // 정규화 설정
     @Value("${document.normalization.enabled}")
@@ -44,8 +44,8 @@ public class ContentFormatTransformer implements DocumentTransformer {
     // 정규식 패턴들
     private static final Pattern CODE_BLOCK_PATTERN = Pattern.compile("```[\\s\\S]*?```");
     private static final Pattern SPECIAL_CHARS_PATTERN = Pattern.compile(
-        "[^\\uAC00-\\uD7AF\\u1100-\\u11FF\\u3130-\\u318F\\uA960-\\uA97F\\uD7B0-\\uD7FF" +
-        "a-zA-Z0-9\\s\\n\\t\\-_.,()\\[\\]{}\"':;!?@#$%&*+=|\\\\/<>]");
+            "[^\\uAC00-\\uD7AF\\u1100-\\u11FF\\u3130-\\u318F\\uA960-\\uA97F\\uD7B0-\\uD7FF" +
+                    "a-zA-Z0-9\\s\\n\\t\\-_.,()\\[\\]{}\"':;!?@#$%&*+=|\\\\/<>]");
 
     @Override
     public Document transform(Document document) {
@@ -95,9 +95,9 @@ public class ContentFormatTransformer implements DocumentTransformer {
 
             if (log.isDebugEnabled()) {
                 log.debug("정규화 적용: {} -> {} (길이: {} -> {})",
-                    originalContent.substring(0, Math.min(50, originalContent.length())),
-                    normalizedContent.substring(0, Math.min(50, normalizedContent.length())),
-                    originalContent.length(), normalizedContent.length());
+                        originalContent.substring(0, Math.min(50, originalContent.length())),
+                        normalizedContent.substring(0, Math.min(50, normalizedContent.length())),
+                        originalContent.length(), normalizedContent.length());
             }
 
             return Document.from(normalizedContent, newMetadata);
@@ -114,7 +114,8 @@ public class ContentFormatTransformer implements DocumentTransformer {
         }
 
         log.info("문서 형식 변환 시작: {}개 문서 (HTML: {}, 공백: {}, 줄바꿈: {}, 코드블록: {}, 특수문자: {})",
-                 documents.size(), removeHtmlTags, normalizeWhitespace, normalizeNewlines, removeCodeBlocks, cleanSpecialChars);
+                documents.size(), removeHtmlTags, normalizeWhitespace, normalizeNewlines, removeCodeBlocks,
+                cleanSpecialChars);
 
         List<Document> normalizedDocuments = documents.stream()
                 .map(this::transform)

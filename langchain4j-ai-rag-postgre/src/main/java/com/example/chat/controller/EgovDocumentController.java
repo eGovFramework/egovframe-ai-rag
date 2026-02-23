@@ -1,7 +1,7 @@
 package com.example.chat.controller;
 
 import com.example.chat.response.DocumentStatusResponse;
-import com.example.chat.service.DocumentService;
+import com.example.chat.service.EgovDocumentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -16,16 +16,16 @@ import java.util.concurrent.CompletableFuture;
 @RequestMapping("/api/documents")
 @RequiredArgsConstructor
 @CrossOrigin
-public class DocumentController {
+public class EgovDocumentController {
 
-    private final DocumentService documentService;
+    private final EgovDocumentService egovDocumentService;
 
     /**
      * 문서 처리 상태 조회
      */
     @GetMapping("/status")
     public DocumentStatusResponse getStatus() {
-        return documentService.getStatusResponse();
+        return egovDocumentService.getStatusResponse();
     }
 
     /**
@@ -33,7 +33,7 @@ public class DocumentController {
      */
     @PostMapping("/reindex")
     public String reindexDocuments() {
-        return documentService.reindexDocuments();
+        return egovDocumentService.reindexDocuments();
     }
 
     /**
@@ -41,7 +41,7 @@ public class DocumentController {
      */
     @PostMapping("/upload")
     public ResponseEntity<Map<String, Object>> uploadMarkdownFiles(@RequestParam("files") MultipartFile[] files) {
-        Map<String, Object> result = documentService.uploadMarkdownFiles(files);
+        Map<String, Object> result = egovDocumentService.uploadMarkdownFiles(files);
         boolean success = Boolean.TRUE.equals(result.get("success"));
         if (success) {
             return ResponseEntity.ok(result);

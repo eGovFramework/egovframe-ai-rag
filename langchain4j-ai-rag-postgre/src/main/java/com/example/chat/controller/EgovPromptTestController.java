@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @RestController
 @RequestMapping("/ai/prompt")
-public class PromptTestController {
+public class EgovPromptTestController {
 
     @Value("${langchain4j.ollama.base-url}")
     private String ollamaBaseUrl;
@@ -37,7 +37,8 @@ public class PromptTestController {
      * Zero-shot 패턴 테스트
      */
     @GetMapping(value = "/zero-shot", produces = MediaType.TEXT_PLAIN_VALUE)
-    public String testZeroShot(@RequestParam(value = "query", defaultValue = "Spring Boot의 주요 특징을 설명해주세요") String query) {
+    public String testZeroShot(
+            @RequestParam(value = "query", defaultValue = "Spring Boot의 주요 특징을 설명해주세요") String query) {
         log.info("Zero-shot 패턴 테스트 - 쿼리: {}", query);
 
         String systemPrompt = PromptEngineeringUtil.createZeroShotPrompt();
@@ -100,7 +101,8 @@ public class PromptTestController {
      * Chain-of-Thought 패턴 테스트
      */
     @GetMapping(value = "/chain-of-thought", produces = MediaType.TEXT_PLAIN_VALUE)
-    public String testChainOfThought(@RequestParam(value = "query", defaultValue = "마이크로서비스 아키텍처를 설명해주세요") String query) {
+    public String testChainOfThought(
+            @RequestParam(value = "query", defaultValue = "마이크로서비스 아키텍처를 설명해주세요") String query) {
         log.info("Chain-of-Thought 테스트 - 쿼리: {}", query);
 
         String systemPrompt = PromptEngineeringUtil.createChainOfThoughtPrompt();
@@ -251,19 +253,19 @@ public class PromptTestController {
             @RequestBody Map<String, Object> requestBody) {
         log.info("동적 Few-shot 테스트 - 쿼리: {}", query);
 
-        String context = (String) requestBody.getOrDefault("context", "PostgreSQL은 강력한 오픈소스 관계형 데이터베이스입니다. 인덱싱, 쿼리 최적화, 연결 풀링 등 다양한 성능 최적화 기법을 제공합니다.");
+        String context = (String) requestBody.getOrDefault("context",
+                "PostgreSQL은 강력한 오픈소스 관계형 데이터베이스입니다. 인덱싱, 쿼리 최적화, 연결 풀링 등 다양한 성능 최적화 기법을 제공합니다.");
 
         @SuppressWarnings("unchecked")
-        List<Map<String, String>> examplesList = (List<Map<String, String>>) requestBody.getOrDefault("examples", List.of(
-                Map.of("question", "인덱스는 언제 사용하나요?", "answer", "자주 조회되는 컬럼에 인덱스를 생성하면 검색 속도가 향상됩니다."),
-                Map.of("question", "연결 풀은 무엇인가요?", "answer", "연결 풀은 데이터베이스 연결을 재사용하여 연결 비용을 줄입니다.")
-        ));
+        List<Map<String, String>> examplesList = (List<Map<String, String>>) requestBody.getOrDefault("examples",
+                List.of(
+                        Map.of("question", "인덱스는 언제 사용하나요?", "answer", "자주 조회되는 컬럼에 인덱스를 생성하면 검색 속도가 향상됩니다."),
+                        Map.of("question", "연결 풀은 무엇인가요?", "answer", "연결 풀은 데이터베이스 연결을 재사용하여 연결 비용을 줄입니다.")));
 
-        List<Map.Entry<String, String>> examples = examplesList.stream()
-                .<Map.Entry<String, String>>map(map -> new AbstractMap.SimpleEntry<>(
+        List<Map.Entry<String, String>> examples = examplesList
+                .stream().<Map.Entry<String, String>>map(map -> new AbstractMap.SimpleEntry<>(
                         map.getOrDefault("question", ""),
-                        map.getOrDefault("answer", "")
-                ))
+                        map.getOrDefault("answer", "")))
                 .collect(Collectors.toList());
 
         String systemPrompt = PromptEngineeringUtil.createDynamicFewShotPrompt(context, examples);
@@ -280,7 +282,8 @@ public class PromptTestController {
      * 프롬프트 비교 테스트 (Zero-shot vs Few-shot)
      */
     @GetMapping(value = "/compare", produces = MediaType.APPLICATION_JSON_VALUE)
-    public Map<String, String> testPromptComparison(@RequestParam(value = "query", defaultValue = "Kubernetes의 주요 개념을 설명해주세요") String query) {
+    public Map<String, String> testPromptComparison(
+            @RequestParam(value = "query", defaultValue = "Kubernetes의 주요 개념을 설명해주세요") String query) {
         log.info("프롬프트 비교 테스트 - 쿼리: {}", query);
 
         OllamaChatModel chatModel = createChatModel();
@@ -299,8 +302,7 @@ public class PromptTestController {
         return Map.of(
                 "zero_shot", zeroShotResponse,
                 "few_shot", fewShotResponse,
-                "query", query
-        );
+                "query", query);
     }
 
     /**

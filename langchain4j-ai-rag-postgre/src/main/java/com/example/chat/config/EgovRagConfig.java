@@ -16,7 +16,7 @@ import org.springframework.context.annotation.Configuration;
  */
 @Slf4j
 @Configuration
-public class RagConfig {
+public class EgovRagConfig {
 
     @Value("${rag.top-k:3}")
     private int topK;
