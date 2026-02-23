@@ -1,6 +1,8 @@
 package com.example.chat.service.impl;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -17,7 +19,6 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.redis.RedisVectorStore;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.beans.factory.annotation.Value;
 
@@ -42,15 +43,15 @@ public class EgovDocumentServiceImpl extends EgovAbstractServiceImpl implements 
     private String documentPath;
 
     // ETL 파이프라인 컴포넌트들
-    private final EgovMarkdownReader markdownReader;
-    private final EgovPdfReader pdfReader;
-    private final EgovContentFormatTransformer contentFormatTransformer;
-    private final EgovEnhancedDocumentTransformer enhancedDocumentTransformer;
-    private final EgovVectorStoreWriter vectorStoreWriter;
-    
+    private final EgovMarkdownReader egovMarkdownReader;
+    private final EgovPdfReader egovPdfReader;
+    private final EgovContentFormatTransformer egovContentFormatTransformer;
+    private final EgovEnhancedDocumentTransformer egovEnhancedDocumentTransformer;
+    private final EgovVectorStoreWriter egovVectorStoreWriter;
+
     // 직접 Redis 저장을 위한 컴포넌트
     private final RedisVectorStore redisVectorStore;
-    
+
     // 기존 의존성들
     private final StringRedisTemplate stringRedisTemplate;
     private final Executor executor;
@@ -96,15 +97,15 @@ public class EgovDocumentServiceImpl extends EgovAbstractServiceImpl implements 
         return CompletableFuture.supplyAsync(() -> {
             try {
                 // 1단계: 마크다운과 PDF 문서 읽기
-                List<Document> markdownDocuments = markdownReader.get();
-                List<Document> pdfDocuments = pdfReader.get();
-                
+                List<Document> markdownDocuments = egovMarkdownReader.get();
+                List<Document> pdfDocuments = egovPdfReader.get();
+
                 List<Document> allDocuments = new ArrayList<>();
                 allDocuments.addAll(markdownDocuments);
                 allDocuments.addAll(pdfDocuments);
-                
+
                 totalCount.set(allDocuments.size());
-                log.info("총 {}개의 문서를 로드했습니다. (마크다운: {}개, PDF: {}개)", 
+                log.info("총 {}개의 문서를 로드했습니다. (마크다운: {}개, PDF: {}개)",
                         allDocuments.size(), markdownDocuments.size(), pdfDocuments.size());
 
                 // 2단계: 변경된 문서 필터링
@@ -120,17 +121,17 @@ public class EgovDocumentServiceImpl extends EgovAbstractServiceImpl implements 
 
                 // 3단계: 문서 형식 정규화 (ContentFormatTransformer)
                 log.info("문서 형식 정규화 시작");
-                List<Document> normalizedDocuments = contentFormatTransformer.apply(changedDocuments);
+                List<Document> normalizedDocuments = egovContentFormatTransformer.apply(changedDocuments);
                 log.info("문서 형식 정규화 완료: {}개 문서", normalizedDocuments.size());
 
                 // 4단계: 문서 변환 (청크 분할, 메타데이터 추가)
                 log.info("문서 변환 시작");
-                List<Document> transformedDocuments = enhancedDocumentTransformer.apply(normalizedDocuments);
+                List<Document> transformedDocuments = egovEnhancedDocumentTransformer.apply(normalizedDocuments);
                 log.info("문서 변환 완료: {}개 청크 생성", transformedDocuments.size());
 
                 // 5단계: 벡터 저장소에 저장
                 log.info("벡터 저장소 저장 시작");
-                vectorStoreWriter.accept(transformedDocuments);
+                egovVectorStoreWriter.accept(transformedDocuments);
                 log.info("벡터 저장소 저장 완료");
 
                 // 6단계: 처리된 문서 해시 저장
@@ -139,8 +140,8 @@ public class EgovDocumentServiceImpl extends EgovAbstractServiceImpl implements 
                 }
 
                 processedCount.set(transformedDocuments.size());
-                log.info("문서 처리 완료: {}개 문서 처리됨 (원본: {}개 → 청크: {}개)", 
-                    transformedDocuments.size(), changedDocuments.size(), transformedDocuments.size());
+                log.info("문서 처리 완료: {}개 문서 처리됨 (원본: {}개 → 청크: {}개)",
+                        transformedDocuments.size(), changedDocuments.size(), transformedDocuments.size());
 
                 return transformedDocuments.size();
 
@@ -172,7 +173,14 @@ public class EgovDocumentServiceImpl extends EgovAbstractServiceImpl implements 
         long totalSize = 0;
         int uploaded = 0;
         for (MultipartFile file : files) {
-            String filename = StringUtils.cleanPath(file.getOriginalFilename());
+            String originalFilename = file.getOriginalFilename();
+            if (originalFilename == null || originalFilename.isBlank()) {
+                result.put("success", false);
+                result.put("message", "파일명이 없습니다.");
+                result.putIfAbsent("files", Collections.emptyList());
+                return result;
+            }
+            String filename = Paths.get(originalFilename).getFileName().toString();
             if (!filename.endsWith(".md")) {
                 result.put("success", false);
                 result.put("message", "마크다운(.md) 파일만 업로드 가능합니다.");
@@ -198,12 +206,19 @@ public class EgovDocumentServiceImpl extends EgovAbstractServiceImpl implements 
         if (!dir.exists())
             dir.mkdirs();
         for (MultipartFile file : files) {
-            String filename = StringUtils.cleanPath(file.getOriginalFilename());
+            String filename = Paths.get(file.getOriginalFilename()).getFileName().toString();
             File dest = new File(dir, filename);
             try {
+                // 경로 탐색(Path Traversal) 방어: 저장 경로가 허용된 디렉토리 내인지 검증
+                if (!dest.getCanonicalPath().startsWith(dir.getCanonicalPath() + File.separator)) {
+                    result.put("success", false);
+                    result.put("message", "허용되지 않는 파일 경로입니다: " + filename);
+                    result.putIfAbsent("files", Collections.emptyList());
+                    return result;
+                }
                 file.transferTo(dest);
                 uploaded++;
-            } catch (Exception e) {
+            } catch (IOException e) {
                 result.put("success", false);
                 result.put("message", filename + " 저장 실패: " + e.getMessage());
                 return result;
@@ -233,10 +248,10 @@ public class EgovDocumentServiceImpl extends EgovAbstractServiceImpl implements 
 
         // 비동기 완료 후 로그 처리
         future.thenAccept(count -> log.info("재인덱싱 완료: {}개 청크 처리됨", count))
-              .exceptionally(throwable -> {
-                  log.error("재인덱싱 중 오류 발생", throwable);
-                  return null;
-              });
+                .exceptionally(throwable -> {
+                    log.error("재인덱싱 중 오류 발생", throwable);
+                    return null;
+                });
 
         log.info("비동기 재인덱싱 요청 성공");
         return "문서 재인덱싱이 처리되었습니다.";
@@ -302,4 +317,4 @@ public class EgovDocumentServiceImpl extends EgovAbstractServiceImpl implements 
             log.debug("문서 '{}' 해시 저장 완료: {}", docId, newHash);
         }
     }
-} 
+}
