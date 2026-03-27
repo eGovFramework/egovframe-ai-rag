@@ -174,13 +174,18 @@ public class EgovRagConfig {
                     String preview = content.length() > 100 ? content.substring(0, 100) + "..." : content;
                     totalChars += content.length();
 
-                    // 유사도 점수 로깅 (메타데이터에서 추출)
-                    Object similarityScore = doc.getMetadata().get("distance");
-                    if (similarityScore == null) {
-                        similarityScore = doc.getMetadata().get("score");
+                    // 유사도 점수 로깅 (distance = 1 - cosine_similarity이므로 변환)
+                    Object rawDistance = doc.getMetadata().get("distance");
+                    String scoreDisplay;
+                    if (rawDistance != null) {
+                        double similarity = 1.0 - ((Number) rawDistance).doubleValue();
+                        scoreDisplay = String.format("%.4f (distance=%.4f)", similarity, ((Number) rawDistance).doubleValue());
+                    } else {
+                        Object score = doc.getMetadata().get("score");
+                        scoreDisplay = score != null ? score.toString() : "N/A";
                     }
 
-                    log.info("  문서 #{}: 유사도={}, 길이={}자, 내용={}", i + 1, similarityScore, content.length(), preview);
+                    log.info("  문서 #{}: 유사도={}, 길이={}자, 내용={}", i + 1, scoreDisplay, content.length(), preview);
                 }
 
                 log.info("→ 총 {}자의 컨텍스트가 LLM에 전달됩니다", totalChars);

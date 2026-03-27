@@ -22,11 +22,11 @@ spring:
           modelOutputName: token_embeddings
         tokenizer:
           uri: classpath:model/tokenizer.json
-        djl:
-          # DJL 성능 최적화 설정 (선택사항)
-          optimization:
-            enabled: true
-          threads: 4
+          options:
+            padding: true
+            truncation: true
+            maxLength: 512
+            returnTensor: true
 
     # Redis 벡터 저장소 설정
     # 처음 실행 시에만 true로 설정하고, 이후에는 false로 변경하여 중복 데이터 방지
@@ -111,7 +111,7 @@ rag:
   # 실제 검색 유사도: 0.22~0.26 범위 → 임베딩 품질 제한
   # 임계값을 조정: 0.20 (너무 높으면 검색 결과 없음)
   similarity:
-    threshold: 0.20
+    threshold: 0.70
 
   # RAG 검색 결과 개수 (Top K)
   top-k: 3
