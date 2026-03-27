@@ -104,7 +104,7 @@ document:
 rag:
   # RAG 유사도 임계값 설정 (0.0 ~ 1.0)
   similarity:
-    threshold: 0.20
+    threshold: 0.70
 
   # RAG 검색 결과 개수 (Top K)
   top-k: 3
