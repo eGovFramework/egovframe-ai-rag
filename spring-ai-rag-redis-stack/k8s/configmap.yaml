@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spring-ai-rag-redis
+  labels:
+    app.kubernetes.io/name: spring-ai-rag-redis
+    app.kubernetes.io/part-of: egovframe-ai-rag
+data:
+  # Override application.yml values via Spring relaxed binding.
+  # The original config hard-codes Windows file paths and localhost Ollama;
+  # these env vars let cluster operators point each environment at the
+  # correct services without rebuilding the image.
+  SPRING_AI_OLLAMA_BASE_URL: "http://ollama:11434"
+  SPRING_AI_VECTORSTORE_REDIS_HOST: "redis-stack"
+  SPRING_AI_VECTORSTORE_REDIS_PORT: "6379"
+  SPRING_AI_VECTORSTORE_REDIS_INITIALIZE_SCHEMA: "false"
+  SPRING_AI_DOCUMENT_PATH: "file:/workspace/data/**/*.md"
+  SPRING_AI_DOCUMENT_PDF_PATH: "file:/workspace/data/**/*.pdf"
+  MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info"
