@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: langchain4j-ai-rag-postgre
+  labels:
+    app.kubernetes.io/name: langchain4j-ai-rag-postgre
+    app.kubernetes.io/part-of: egovframe-ai-rag
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: langchain4j-ai-rag-postgre
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
