@@ -1,0 +1,47 @@
+version: 2
+updates:
+  - package-ecosystem: "maven"
+    directories:
+      - "/langchain4j-ai-rag-postgre"
+      - "/spring-ai-rag-redis-stack"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Seoul"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Seoul"
+    open-pull-requests-limit: 3
+    labels:
+      - "ci"
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+
+  - package-ecosystem: "docker"
+    directories:
+      - "/langchain4j-ai-rag-postgre"
+      - "/spring-ai-rag-redis-stack"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Seoul"
+    open-pull-requests-limit: 3
+    labels:
+      - "docker"
+    commit-message:
+      prefix: "docker"
+      include: "scope"
