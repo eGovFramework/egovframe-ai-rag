@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: langchain4j-ai-rag-postgre
+  labels:
+    app: langchain4j-ai-rag-postgre
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: langchain4j-ai-rag-postgre
+  template:
+    metadata:
+      labels:
+        app: langchain4j-ai-rag-postgre
+    spec:
+      containers:
+        - name: langchain4j-ai-rag-postgre
+          image: langchain4j-ai-rag-postgre:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: langchain4j-rag-config
+          env:
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: langchain4j-rag-secret
+                  key: db-password
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: langchain4j-rag-secret
+                  key: openai-api-key
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 15

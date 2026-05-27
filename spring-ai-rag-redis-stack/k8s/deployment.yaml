@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spring-ai-rag-redis-stack
+  labels:
+    app: spring-ai-rag-redis-stack
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: spring-ai-rag-redis-stack
+  template:
+    metadata:
+      labels:
+        app: spring-ai-rag-redis-stack
+    spec:
+      containers:
+        - name: spring-ai-rag-redis-stack
+          image: spring-ai-rag-redis-stack:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: spring-ai-rag-config
+          env:
+            - name: SPRING_AI_OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: spring-ai-rag-secret
+                  key: openai-api-key
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 15

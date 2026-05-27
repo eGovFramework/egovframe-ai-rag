@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spring-ai-rag-config
+  labels:
+    app: spring-ai-rag-redis-stack
+data:
+  SPRING_REDIS_HOST: "redis-stack"
+  SPRING_REDIS_PORT: "6379"
+  SPRING_AI_OPENAI_BASE_URL: "https://api.openai.com"
