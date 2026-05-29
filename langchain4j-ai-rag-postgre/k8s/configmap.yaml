@@ -8,7 +8,26 @@ metadata:
 data:
   # Override application.yml values via Spring relaxed binding.
   # Sensitive credentials should come from a Secret, not this ConfigMap.
+
+  # Spring DataSource (spring.datasource.*)
   SPRING_DATASOURCE_URL: "jdbc:postgresql://postgres-pgvector:5432/ragdb"
   SPRING_DATASOURCE_DRIVER_CLASS_NAME: "org.postgresql.Driver"
   SPRING_JPA_HIBERNATE_DDL_AUTO: "update"
+
+  # PGVector 전용 연결 설정 (pgvector.*)
+  # application.yml의 pgvector.* 프로퍼티를 오버라이드한다.
+  PGVECTOR_HOST: "postgres-pgvector"
+  PGVECTOR_PORT: "5432"
+  PGVECTOR_DATABASE: "ragdb"
+  PGVECTOR_USERNAME: "postgres"
+
+  # LangChain4j Ollama (langchain4j.ollama.base-url, 대시 제거 env명)
+  LANGCHAIN4J_OLLAMA_BASEURL: "http://ollama:11434"
+
+  # 임베딩 설정 파일 경로 (app.embedding-config-path, 대시 제거 env명)
+  # 파드에 마운트된 PVC(/models) 내 사용자가 적재한 파일을 참조한다.
+  APP_EMBEDDINGCONFIGPATH: "/models/Config/embeddingConfig.json"
+
+  # Actuator health probe 활성화
   MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info"
+  MANAGEMENT_ENDPOINT_HEALTH_PROBES_ENABLED: "true"

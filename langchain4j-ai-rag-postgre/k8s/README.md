@@ -13,7 +13,8 @@
 | 실행 중인 Kubernetes 클러스터 | 로컬: minikube / kind, 운영: EKS·GKE·AKS 등 |
 | 컨테이너 레지스트리 | 이미지 push 가능한 레지스트리 |
 | PostgreSQL + PGVector | `postgres-pgvector` 서비스로 접근 가능해야 함 |
-| Ollama | 클러스터 내 또는 외부에서 `11434` 포트 접근 가능해야 함 |
+| Ollama | 클러스터 내 `ollama` 서비스(11434 포트) 또는 외부 주소 |
+| ONNX 임베딩 모델 | 사용자가 직접 준비 후 PVC에 적재 (이미지에 포함되지 않음) |
 
 ---
 
@@ -34,9 +35,39 @@ docker build \
 docker push <레지스트리>/langchain4j-ai-rag-postgre:1.0.0
 ```
 
+> **참고** — 런타임 베이스 이미지로 `eclipse-temurin:17-jre-jammy`(glibc)를 사용한다.
+> DJL `libtokenizers.so` 등 네이티브 라이브러리가 glibc를 요구하므로 musl 기반 alpine 이미지는 사용하지 않는다.
+
 ---
 
-## 2. 매니페스트 수정
+## 2. 임베딩 모델 PVC 준비
+
+ONNX 임베딩 모델과 `embeddingConfig.json`은 이미지에 포함되지 않는다.
+배포 전 아래 순서로 PVC를 생성하고 모델 파일을 적재한다.
+
+```bash
+# PVC 생성
+kubectl apply -f k8s/models-pvc.yaml
+
+# 임시 파드로 파일 복사 (minikube 예시)
+kubectl run model-loader --image=busybox --restart=Never \
+  --overrides='{"spec":{"volumes":[{"name":"m","persistentVolumeClaim":{"claimName":"langchain4j-ai-rag-postgre-models"}}],"containers":[{"name":"c","image":"busybox","command":["sleep","3600"],"volumeMounts":[{"name":"m","mountPath":"/models"}]}]}}'
+
+kubectl cp <로컬-모델-디렉토리>/. model-loader:/models/
+kubectl delete pod model-loader
+```
+
+PVC 내 디렉토리 구조 예시:
+
+```
+/models/
+└── Config/
+    └── embeddingConfig.json   ← APP_EMBEDDINGCONFIGPATH 참조 경로
+```
+
+---
+
+## 3. 매니페스트 수정
 
 ### deployment.yaml — 이미지 경로 교체
 
@@ -46,20 +77,30 @@ docker push <레지스트리>/langchain4j-ai-rag-postgre:1.0.0
 image: <레지스트리>/langchain4j-ai-rag-postgre:1.0.0
 ```
 
-### configmap.yaml — 환경별 값 확인
+### configmap.yaml — 환경변수 목록
 
-`k8s/configmap.yaml`에서 아래 항목이 실제 클러스터 환경과 일치하는지 확인한다.
+`k8s/configmap.yaml`에 설정된 환경변수가 실제 클러스터 환경과 일치하는지 확인한다.
 
-| 키 | 기본값 | 설명 |
-|----|--------|------|
-| `SPRING_DATASOURCE_URL` | `jdbc:postgresql://postgres-pgvector:5432/ragdb` | PostgreSQL 서비스명·포트·DB명 |
-| `SPRING_DATASOURCE_DRIVER_CLASS_NAME` | `org.postgresql.Driver` | 드라이버 클래스 |
-| `SPRING_JPA_HIBERNATE_DDL_AUTO` | `update` | DDL 전략 (운영: `validate` 권장) |
-| `MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE` | `health,info` | Actuator 노출 엔드포인트 |
+| 환경변수 | 기본값 | 대응 프로퍼티 |
+|---------|--------|--------------|
+| `SPRING_DATASOURCE_URL` | `jdbc:postgresql://postgres-pgvector:5432/ragdb` | `spring.datasource.url` |
+| `SPRING_DATASOURCE_DRIVER_CLASS_NAME` | `org.postgresql.Driver` | `spring.datasource.driver-class-name` |
+| `SPRING_JPA_HIBERNATE_DDL_AUTO` | `update` | `spring.jpa.hibernate.ddl-auto` |
+| `PGVECTOR_HOST` | `postgres-pgvector` | `pgvector.host` |
+| `PGVECTOR_PORT` | `5432` | `pgvector.port` |
+| `PGVECTOR_DATABASE` | `ragdb` | `pgvector.database` |
+| `PGVECTOR_USERNAME` | `postgres` | `pgvector.username` |
+| `LANGCHAIN4J_OLLAMA_BASEURL` | `http://ollama:11434` | `langchain4j.ollama.base-url` |
+| `APP_EMBEDDINGCONFIGPATH` | `/models/Config/embeddingConfig.json` | `app.embedding-config-path` |
+| `MANAGEMENT_ENDPOINT_HEALTH_PROBES_ENABLED` | `true` | `management.endpoint.health.probes.enabled` |
+
+> `SPRING_DATASOURCE_*`와 `PGVECTOR_*`는 각각 독립적인 연결 설정이며 둘 다 `postgres-pgvector`를 가리킨다.
 
 ### Secret — DB 인증 정보 생성
 
-DB 사용자명과 비밀번호는 Secret으로 관리한다. Secret 이름은 `langchain4j-ai-rag-postgre-db`이어야 한다.
+DB 비밀번호는 ConfigMap에 평문으로 넣지 않고 Secret으로 관리한다.
+`k8s/pgvector-secret.yaml`의 `stringData` 값을 실제 비밀번호로 수정하거나
+아래 명령으로 직접 생성한다.
 
 ```bash
 kubectl create secret generic langchain4j-ai-rag-postgre-db \
@@ -67,34 +108,20 @@ kubectl create secret generic langchain4j-ai-rag-postgre-db \
   --from-literal=password=<DB_PASSWORD>
 ```
 
-### Ollama 연결 주소 설정 (환경변수 추가)
-
-Ollama가 클러스터 외부에 있는 경우 `deployment.yaml`의 `env` 섹션에 아래 항목을 추가한다.
-
-```yaml
-env:
-  - name: LANGCHAIN4J_OLLAMA_BASE_URL
-    value: "http://<ollama-host>:11434"
-```
-
-클러스터 내 Ollama 서비스가 있으면 서비스 DNS 이름(예: `http://ollama:11434`)을 사용한다.
-
-### ONNX 임베딩 모델 경로 설정
-
-`app.embedding-config-path`는 파드 내 경로를 가리킨다. PersistentVolumeClaim 또는 ConfigMap/Secret을 통해 아래 환경변수로 재정의한다.
-
-```yaml
-env:
-  - name: APP_EMBEDDING_CONFIG_PATH
-    value: "/config/embeddingConfig.json"
-```
+Secret의 `password` 키는 `SPRING_DATASOURCE_PASSWORD`와 `PGVECTOR_PASSWORD` 양쪽에 주입된다.
 
 ---
 
-## 3. 배포
+## 4. 배포
 
 ```bash
-# ConfigMap 먼저 적용
+# PVC 먼저 생성 (임베딩 모델 적재 포함 — 위 2번 참고)
+kubectl apply -f k8s/models-pvc.yaml
+
+# Secret 적용
+kubectl apply -f k8s/pgvector-secret.yaml
+
+# ConfigMap 적용
 kubectl apply -f k8s/configmap.yaml
 
 # Deployment · Service 적용
@@ -104,7 +131,7 @@ kubectl apply -f k8s/service.yaml
 
 ---
 
-## 4. 상태 확인
+## 5. 상태 확인
 
 ```bash
 # 파드 상태 확인
@@ -120,9 +147,11 @@ kubectl rollout status deployment/langchain4j-ai-rag-postgre
 kubectl exec -it <pod-name> -- wget -qO- http://127.0.0.1:8080/actuator/health
 ```
 
+> **참고** — ONNX 모델 로딩에 시간이 걸리므로 `readinessProbe.initialDelaySeconds`는 60초로 설정되어 있다.
+
 ---
 
-## 5. 접속
+## 6. 접속
 
 Service 타입이 `ClusterIP`이므로 클러스터 외부에서 직접 접근할 수 없다. 아래 방법 중 하나를 선택한다.
 
@@ -177,22 +206,25 @@ spec:
 
 ---
 
-## 6. 주요 포트 및 환경변수 요약
+## 7. 주요 포트 및 리소스 설정 요약
 
 | 항목 | 값 | 설명 |
 |------|----|------|
 | 애플리케이션 포트 | `8080` | HTTP, EXPOSE 및 containerPort |
-| Readiness probe | `GET /actuator/health/readiness` | 트래픽 수신 준비 여부 |
-| Liveness probe | `GET /actuator/health/liveness` | 재시작 필요 여부 |
+| Readiness probe | `GET /actuator/health/readiness` | 트래픽 수신 준비 여부 (initialDelay: 60s) |
+| Liveness probe | `GET /actuator/health/liveness` | 재시작 필요 여부 (initialDelay: 60s) |
+| CPU requests/limits | `500m` / `2000m` | |
+| Memory requests/limits | `2Gi` / `8Gi` | ONNX 모델 로딩 고려 |
 | PostgreSQL 서비스명 | `postgres-pgvector` | 클러스터 내 DNS |
 | PostgreSQL 포트 | `5432` | |
 | DB 이름 | `ragdb` | |
-| Ollama 기본 포트 | `11434` | |
-| ONNX 임베딩 설정 파일 | `${user.home}/langchain4j-Config/Config/embeddingConfig.json` | 파드 내 마운트 경로로 재정의 가능 |
+| Ollama 서비스 | `http://ollama:11434` | 클러스터 내 DNS 기본값 |
+| 임베딩 설정 파일 경로 | `/models/Config/embeddingConfig.json` | PVC 마운트 경로 |
+| 모델 PVC | `langchain4j-ai-rag-postgre-models` (5Gi) | 사전 적재 필요 |
 
 ---
 
-## 7. 업데이트 배포 (롤링 업데이트)
+## 8. 업데이트 배포 (롤링 업데이트)
 
 새 이미지를 빌드·push한 후 이미지 태그를 갱신하여 재적용한다.
 
@@ -215,11 +247,12 @@ kubectl rollout undo deployment/langchain4j-ai-rag-postgre
 
 ---
 
-## 8. 리소스 정리
+## 9. 리소스 정리
 
 ```bash
 kubectl delete -f k8s/service.yaml
 kubectl delete -f k8s/deployment.yaml
 kubectl delete -f k8s/configmap.yaml
+kubectl delete -f k8s/models-pvc.yaml
 kubectl delete secret langchain4j-ai-rag-postgre-db
 ```

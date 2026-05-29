@@ -18,10 +18,12 @@ RUN --mount=type=cache,target=/root/.m2 \
     cp target/*.jar /workspace/app.jar
 
 # ---------- Runtime ----------
-FROM eclipse-temurin:17-jre-alpine AS runtime
+# jammy(glibc) 베이스 사용 — DJL libtokenizers.so 등 네이티브 라이브러리가 glibc를 요구하므로
+# musl 기반 alpine 이미지에서는 실행 시 로드 오류가 발생한다.
+FROM eclipse-temurin:17-jre-jammy AS runtime
 
 # Run as a non-root user
-RUN addgroup -S app && adduser -S -G app app
+RUN groupadd -r app && useradd -r -g app app
 USER app:app
 
 WORKDIR /app

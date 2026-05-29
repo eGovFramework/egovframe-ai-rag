@@ -48,18 +48,25 @@ spec:
                 secretKeyRef:
                   name: langchain4j-ai-rag-postgre-db
                   key: password
+            # pgvector.password는 Spring datasource와 별개의 연결 설정이므로 별도 주입
+            - name: PGVECTOR_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: langchain4j-ai-rag-postgre-db
+                  key: password
           resources:
             requests:
-              cpu: "250m"
-              memory: "512Mi"
+              cpu: "500m"
+              memory: "2Gi"
             limits:
-              cpu: "1000m"
-              memory: "1Gi"
+              cpu: "2000m"
+              # ONNX 임베딩 모델 로딩 시 대용량 메모리가 필요하므로 8Gi로 설정
+              memory: "8Gi"
           readinessProbe:
             httpGet:
               path: /actuator/health/readiness
               port: http
-            initialDelaySeconds: 20
+            initialDelaySeconds: 60
             periodSeconds: 10
             failureThreshold: 6
           livenessProbe:
@@ -78,6 +85,14 @@ spec:
           volumeMounts:
             - name: tmp
               mountPath: /tmp
+            # ONNX 임베딩 모델 및 embeddingConfig.json을 PVC에서 마운트
+            # PVC에 사전 적재 필요: kubectl cp <local-model-dir> <pod>:/models/
+            - name: models
+              mountPath: /models
+              readOnly: true
       volumes:
         - name: tmp
           emptyDir: {}
+        - name: models
+          persistentVolumeClaim:
+            claimName: langchain4j-ai-rag-postgre-models
