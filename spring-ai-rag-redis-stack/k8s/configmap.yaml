@@ -20,5 +20,6 @@ data:
   SPRING_AI_DOCUMENT_PATH: "file:/workspace/data/**/*.md"
   SPRING_AI_DOCUMENT_PDF_PATH: "file:/workspace/data/**/*.pdf"
   # Actuator health probe 활성화 (/readiness, /liveness)
-  MANAGEMENT_ENDPOINT_HEALTH_PROBES_ENABLED: "true"
+  # management.health.probes.enabled (Spring Boot 정식 속성명)
+  MANAGEMENT_HEALTH_PROBES_ENABLED: "true"
   MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info"
