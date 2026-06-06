@@ -1,6 +1,7 @@
 package com.example.chat.service.impl;
 
 import com.example.chat.context.SessionContext;
+import com.example.chat.service.EgovAiFallbackHandler;
 import com.example.chat.service.EgovChatService;
 import com.example.chat.service.ChatbotFactory;
 import com.example.chat.service.RagChatbot;
@@ -23,6 +24,7 @@ import reactor.core.publisher.Flux;
 public class EgovChatServiceImpl extends EgovAbstractServiceImpl implements EgovChatService {
 
     private final ChatbotFactory chatbotFactory;
+    private final EgovAiFallbackHandler fallbackHandler;
 
     /**
      * 세션별 RAG 기반 스트리밍 응답 생성
@@ -118,19 +120,9 @@ public class EgovChatServiceImpl extends EgovAbstractServiceImpl implements Egov
     }
 
     /**
-     * 예외 처리
+     * 예외 처리 — {@link EgovAiFallbackHandler}에 위임
      */
     private String handleException(Exception e) {
-        String errorMessage = e.getMessage();
-
-        if (errorMessage != null && (errorMessage.contains("timeout")
-                || errorMessage.contains("timed out")
-                || errorMessage.contains("connection")
-                || e instanceof java.net.SocketTimeoutException
-                || e instanceof java.util.concurrent.TimeoutException)) {
-            return "죄송합니다. 서버 응답 시간이 초과되었습니다. 잠시 후 다시 시도해주세요.";
-        }
-
-        return "죄송합니다. 응답을 생성하는 중에 오류가 발생했습니다: " + errorMessage;
+        return fallbackHandler.getFallbackMessage(e);
     }
 }
