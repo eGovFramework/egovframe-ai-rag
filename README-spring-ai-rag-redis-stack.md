@@ -67,7 +67,7 @@
 ## 사전 준비
 
 1. [Ollama](https://ollama.com/download) 설치 및 사용할 LLM 모델을 설치한다. Ollama 설치 및 ONNX 모델 익스포트 방법은 [루트 README](./README.md)의 `공통 사전 준비`, `폐쇄망에서의 Ollama`, `Onnx 모델 익스포트` 항목을 참고한다.
-2. 임베딩 모델 파일(`model.onnx`, `tokenizer.json`)은 `src\main\resources\model` (윈도우) 또는 `src/main/resources/model` (리눅스/macOS) 디렉토리에 위치시켜야 한다.
+2. 임베딩 모델 파일(`model.onnx`, `tokenizer.json`)은 jar(프로젝트) 외부 경로인 `${user.home}/spring-ai-Config/model` (예: 윈도우 `%USERPROFILE%\spring-ai-Config\model`, 리눅스/macOS `~/spring-ai-Config/model`) 디렉토리에 위치시켜야 한다. 다른 경로를 사용하려면 `EMBEDDING_MODEL_PATH`/`EMBEDDING_TOKENIZER_PATH` 환경변수로 전체 경로를 오버라이드할 수 있다 (자세한 설정은 `application.yml`의 `spring.ai.embedding.transformer.onnx.modelUri`/`tokenizer.uri` 참고).
 3. Redis Stack에 인덱싱 될 문서의 경로는 `application.yml`의 `spring.ai.document.path` 및 `spring.ai.document.pdf-path` 속성에 설정되어 있으므로 확인 후 환경에 맞추어 변경하도록 한다.
 4. `docker-compose.yml` 을 사용해 `docker compose up -d`로 docker container 기반의 Redis 설정을 해 둔다. Redis Insight의 기본 포트는 `8001`이다.
 
@@ -321,7 +321,6 @@ spring-ai-rag-redis-stack/
 │
 ├── src/main/resources/
 │   ├── application.yml                # 애플리케이션 설정
-│   ├── model/                         # ONNX 임베딩 모델 (gitignore 대상)
 │   ├── static/js/
 │   │   └── marked.min.js             # 마크다운 렌더링
 │   └── templates/
@@ -345,13 +344,14 @@ spring:
         options:
           temperature: 0.4
 
-    # 로컬 ONNX 임베딩 모델 설정
+    # 로컬 ONNX 임베딩 모델 설정 (jar 외부 경로, OS 무관 ${user.home} 기준)
+    # EMBEDDING_MODEL_PATH / EMBEDDING_TOKENIZER_PATH 환경변수로 경로 오버라이드 가능
     embedding:
       transformer:
         onnx:
-          modelUri: classpath:model/model.onnx
+          modelUri: file:${EMBEDDING_MODEL_PATH:${user.home}/spring-ai-Config/model/model.onnx}
         tokenizer:
-          uri: classpath:model/tokenizer.json
+          uri: file:${EMBEDDING_TOKENIZER_PATH:${user.home}/spring-ai-Config/model/tokenizer.json}
 
     # Redis 벡터 저장소 설정
     vectorstore:

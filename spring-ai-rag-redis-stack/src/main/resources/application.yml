@@ -15,13 +15,15 @@ spring:
     model:
       embedding: transformers
 
+    # ONNX 모델/토크나이저를 jar 외부 경로에서 로드 (OS에 무관하게 ${user.home} 기준,
+    # 필요 시 EMBEDDING_MODEL_PATH/EMBEDDING_TOKENIZER_PATH 환경변수로 오버라이드)
     embedding:
       transformer:
         onnx:
-          modelUri: classpath:model/model.onnx
+          modelUri: file:${EMBEDDING_MODEL_PATH:${user.home}/spring-ai-Config/model/model.onnx}
           modelOutputName: token_embeddings
         tokenizer:
-          uri: classpath:model/tokenizer.json
+          uri: file:${EMBEDDING_TOKENIZER_PATH:${user.home}/spring-ai-Config/model/tokenizer.json}
           options:
             padding: true
             truncation: true
