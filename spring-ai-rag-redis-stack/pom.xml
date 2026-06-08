@@ -107,6 +107,13 @@
 				</exclusion>
 			</exclusions>
 		</dependency>
+        <!-- MCP(Model Context Protocol) 서버 - 표준프레임워크 RAG를 MCP 도구로 노출 (WebMVC SSE) -->
+        <!-- 버전은 부모(egovframe-boot-starter-parent)가 관리하는 spring.ai.version과 동일하게 명시 -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-mcp-server-webmvc</artifactId>
+            <version>${spring.ai.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>

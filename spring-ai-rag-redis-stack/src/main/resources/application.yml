@@ -11,6 +11,14 @@ spring:
         options:
           temperature: 0.4
 
+    # MCP(Model Context Protocol) 서버 - 표준프레임워크 RAG를 MCP 도구로 노출
+    # (WebMVC SSE 전송. 도구: egov_rag_ask / egov_doc_search / egov_index_status / egov_models)
+    mcp:
+      server:
+        name: egov-rag-mcp-server
+        version: 1.0.0
+        type: SYNC
+
     # 로컬 ONNX 모델 사용 설정
     model:
       embedding: transformers

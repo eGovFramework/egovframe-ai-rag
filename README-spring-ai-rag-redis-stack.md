@@ -423,12 +423,59 @@ redis-cli ping
 java -Xmx4g -jar target/spring-ai-rag-redis-stack-1.0.0.jar
 ```
 
+## MCP(Model Context Protocol) 서버
+
+이 애플리케이션은 표준프레임워크 RAG 기능을 **MCP 도구**로 노출한다. Claude Desktop, IDE 에이전트, `egovframe-vscode-initializr` 등 MCP 클라이언트가 표준프레임워크 지식베이스를 표준 도구 호출로 사용할 수 있다.
+
+Spring AI의 MCP Server(WebMVC SSE)를 사용하며, 별도 프로세스 없이 기존 RAG/문서/모델 서비스를 그대로 재사용한다.
+
+### 제공 도구
+
+| 도구 | 설명 |
+| --- | --- |
+| `egov_rag_ask` | 지식베이스를 근거로 질문에 답변(RAG 증강 질의) |
+| `egov_doc_search` | 질문과 유사한 문서 청크를 검색(검색 전용, 답변 생성 없음) |
+| `egov_index_status` | 지식베이스 인덱싱 현황 조회 |
+| `egov_models` | 사용 가능한 LLM(Ollama) 모델 목록 조회 |
+
+### 설정
+
+`application.yml`:
+
+```yaml
+spring:
+  ai:
+    mcp:
+      server:
+        name: egov-rag-mcp-server
+        version: 1.0.0
+        type: SYNC
+```
+
+애플리케이션 기동 시 WebMVC 기반 SSE 엔드포인트(`/sse`)로 MCP 서버가 노출된다.
+
+### MCP 클라이언트 연결 예시
+
+```json
+{
+  "mcpServers": {
+    "egov-rag": {
+      "url": "http://localhost:8080/sse"
+    }
+  }
+}
+```
+
+> 도구가 LLM 답변을 생성하려면 Ollama, 검색을 수행하려면 Redis Stack과 인덱싱된 문서가 필요하다(본문 실행 절차 참조).
+
 ## 참고 자료
 
 - [Spring AI 공식 문서](https://docs.spring.io/spring-ai/reference/)
 - [Spring AI Ollama](https://docs.spring.io/spring-ai/reference/api/chat/ollama-chat.html)
 - [Spring AI RAG](https://docs.spring.io/spring-ai/reference/api/retrieval-augmented-generation.html)
 - [Spring AI Vector Store - Redis](https://docs.spring.io/spring-ai/reference/api/vectordbs/redis.html)
+- [Spring AI MCP Server](https://docs.spring.io/spring-ai/reference/api/mcp/mcp-server-boot-starter-docs.html)
+- [Model Context Protocol](https://modelcontextprotocol.io/)
 - [Redis Stack 문서](https://redis.io/docs/stack/)
 - [Ollama 문서](https://github.com/ollama/ollama)
 - [ONNX Runtime 문서](https://onnxruntime.ai/)
