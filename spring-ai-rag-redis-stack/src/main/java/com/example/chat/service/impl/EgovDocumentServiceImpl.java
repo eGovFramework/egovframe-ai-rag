@@ -26,6 +26,7 @@ import com.example.chat.config.etl.readers.EgovMarkdownReader;
 import com.example.chat.config.etl.readers.EgovPdfReader;
 import com.example.chat.config.etl.transformers.EgovEnhancedDocumentTransformer;
 import com.example.chat.config.etl.transformers.EgovContentFormatTransformer;
+import com.example.chat.config.etl.transformers.EgovPiiMaskingTransformer;
 import com.example.chat.config.etl.writers.EgovVectorStoreWriter;
 import com.example.chat.response.DocumentStatusResponse;
 import com.example.chat.service.EgovDocumentService;
@@ -46,6 +47,7 @@ public class EgovDocumentServiceImpl extends EgovAbstractServiceImpl implements 
     private final EgovMarkdownReader egovMarkdownReader;
     private final EgovPdfReader egovPdfReader;
     private final EgovContentFormatTransformer egovContentFormatTransformer;
+    private final EgovPiiMaskingTransformer egovPiiMaskingTransformer;
     private final EgovEnhancedDocumentTransformer egovEnhancedDocumentTransformer;
     private final EgovVectorStoreWriter egovVectorStoreWriter;
 
@@ -124,9 +126,12 @@ public class EgovDocumentServiceImpl extends EgovAbstractServiceImpl implements 
                 List<Document> normalizedDocuments = egovContentFormatTransformer.apply(changedDocuments);
                 log.info("문서 형식 정규화 완료: {}개 문서", normalizedDocuments.size());
 
+                // 3.5단계: 민감정보(PII) 마스킹 (청크 분할 전 전체 문서 단위로 적용, 기본 비활성)
+                List<Document> maskedDocuments = egovPiiMaskingTransformer.apply(normalizedDocuments);
+
                 // 4단계: 문서 변환 (청크 분할, 메타데이터 추가)
                 log.info("문서 변환 시작");
-                List<Document> transformedDocuments = egovEnhancedDocumentTransformer.apply(normalizedDocuments);
+                List<Document> transformedDocuments = egovEnhancedDocumentTransformer.apply(maskedDocuments);
                 log.info("문서 변환 완료: {}개 청크 생성", transformedDocuments.size());
 
                 // 5단계: 벡터 저장소에 저장

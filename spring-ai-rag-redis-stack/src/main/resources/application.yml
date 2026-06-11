@@ -83,6 +83,24 @@ spring:
         # 특수문자 정리 여부
         clean-special-chars: true
 
+      # 민감정보(PII) 마스킹 설정 (색인 저장 단계 보호)
+      pii-masking:
+        # 마스킹 활성화 여부 (기본 비활성 — 필요 시에만 켠다)
+        enabled: false
+        # 주민등록번호/외국인등록번호 마스킹 여부
+        mask-rrn: true
+        # 카드번호 마스킹 여부 (Luhn 검사를 통과한 번호만 치환)
+        mask-card: true
+        # 인증키/비밀키(key=value) 값 마스킹 여부
+        mask-secret: true
+        # 치환 토큰
+        rrn-token: "[RRN]"
+        card-token: "[CARD]"
+        secret-token: "[SECRET]"
+        account-token: "[ACCOUNT]"
+        # 계좌번호 정규식 (기관별 형식이 달라 오탐이 크므로 기본 미지정 = 비활성)
+        account-regex: ""
+
   # Redis 연결 설정
   data:
     redis:
