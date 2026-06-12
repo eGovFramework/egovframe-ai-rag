@@ -1,0 +1,22 @@
+# OpenGateLLM profile for Spring AI RAG sample.
+# Run with: --spring.profiles.active=opengatellm
+
+spring:
+  ai:
+    openai:
+      base-url: ${OPENGATELLM_BASE_URL:http://localhost:8000}
+      api-key: ${OPENGATELLM_API_KEY:change-me}
+      chat:
+        options:
+          model: ${OPENGATELLM_MODEL:kr-gov-local-general}
+          temperature: 0.2
+
+egov:
+  ai:
+    gateway:
+      provider: opengatellm
+      default-policy: LOCAL_LLM_FIRST
+      audit:
+        metadata-only: true
+        store-prompt: false
+        store-response: false
