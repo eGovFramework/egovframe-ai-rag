@@ -2,8 +2,8 @@ package com.example.chat.config;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
+import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.rag.Query;
 import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
 import org.springframework.ai.rag.retrieval.search.DocumentRetriever;
@@ -31,7 +31,7 @@ public class EgovRagConfig {
     private int topK;
 
     @Bean
-    public ChatClient chatClient(OllamaChatModel chatModel) {
+    public ChatClient chatClient(ChatModel chatModel) {
         log.info("ChatClient 구성: 기본 어드바이저 없이 생성 (세션별 동적 추가)");
         
         return ChatClient.builder(chatModel)

@@ -13,6 +13,7 @@ spring:
 
     # 로컬 ONNX 모델 사용 설정
     model:
+      chat: ollama
       embedding: transformers
 
     # ONNX 모델/토크나이저를 jar 외부 경로에서 로드 (OS에 무관하게 ${user.home} 기준,
@@ -122,4 +123,3 @@ rag:
 chat:
   memory:
     max-messages: 20
-

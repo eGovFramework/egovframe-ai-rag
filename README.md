@@ -18,6 +18,7 @@ OpenAI 호환 API Gateway인 OpenGateLLM을 사용하면 Spring AI 또는 LangCh
 
 - 가이드: [OpenGateLLM AI Gateway 연계 가이드](./README-opengatellm-gateway.md)
 - Spring AI profile 예시: [application-opengatellm.yml](./spring-ai-rag-redis-stack/src/main/resources/application-opengatellm.yml)
+- Spring AI 적용 코드: `spring-ai-rag-redis-stack`은 공통 `ChatModel`을 통해 기본 Ollama 실행과 OpenGateLLM profile 실행을 함께 지원하며, `/api/ai-gateway/status`, `/api/ai-gateway/models`, `/api/ai-gateway/audit/events`로 gateway 적용 상태와 metadata-only 감사 로그를 확인할 수 있다.
 
 ## 공통 환경
 

@@ -224,6 +224,20 @@ Flux<ChatResponse> 스트리밍 응답
 3. `http://localhost:8001/` 에서 인덱싱된 데이터 확인이 가능하다. 이 데이터는 RAG를 적용한 답변 생성 시 LLM이 참고할 문서로 사용된다.
 4. 메인 화면의 `RAG 채팅 모드`, `일반 채팅 모드` 버튼으로 RAG가 적용된 질의 답변, 일반적인 질의 답변을 받을 수 있다.
 
+### OpenGateLLM profile 실행
+
+기본 실행은 Ollama를 직접 사용한다. OpenGateLLM을 AI Gateway로 검증하려면 `opengatellm` profile을 활성화한다.
+
+```bash
+java -jar target/spring-ai-rag-redis-stack-1.0.0.jar \
+  --spring.profiles.active=opengatellm \
+  --OPENGATELLM_BASE_URL=http://localhost:8000 \
+  --OPENGATELLM_API_KEY=change-me \
+  --OPENGATELLM_MODEL=kr-gov-local-general
+```
+
+OpenGateLLM profile에서는 기존 `/ai/rag/stream`, `/ai/simple/stream` API가 동일하게 동작하지만, 실제 LLM 호출은 Spring AI OpenAI-compatible `ChatModel`을 통해 OpenGateLLM gateway로 전달된다. 적용 상태와 metadata-only 감사 로그는 `/api/ai-gateway/status`, `/api/ai-gateway/models`, `/api/ai-gateway/audit/events`에서 확인할 수 있다.
+
 ## API 명세
 
 ### 세션 관리 API
@@ -262,6 +276,14 @@ Flux<ChatResponse> 스트리밍 응답
 |--------|----------|------|
 | GET | `/api/ollama/models` | Ollama 모델 목록 |
 
+### AI Gateway 투명성 API
+
+| Method | Endpoint | 설명 |
+|--------|----------|------|
+| GET | `/api/ai-gateway/status` | 현재 ChatModel provider, OpenGateLLM route, 감사 정책 확인 |
+| GET | `/api/ai-gateway/models` | OpenGateLLM `/v1/models` 라우터 목록 확인 |
+| GET | `/api/ai-gateway/audit/events` | 최근 LLM 호출 metadata-only 감사 이벤트 확인 |
+
 ## 프로젝트 구조
 
 ```
@@ -269,6 +291,7 @@ spring-ai-rag-redis-stack/
 ├── src/main/java/com/example/chat/
 │   ├── config/                        # 설정 클래스
 │   │   ├── EgovRagConfig.java         # RAG Advisor, 벡터 검색 설정
+│   │   ├── EgovAiGatewayProperties.java # OpenGateLLM gateway/audit 설정
 │   │   ├── EgovChatMemoryConfig.java  # ChatMemory, MessageWindowChatMemory 설정
 │   │   ├── EgovRedisConfig.java       # RedisTemplate 설정
 │   │   ├── EgovAsyncConfig.java       # 비동기 처리 설정
@@ -287,6 +310,7 @@ spring-ai-rag-redis-stack/
 │   │       └── EgovCompressionQueryTransformer.java # 질의 압축
 │   │
 │   ├── service/                       # 서비스 계층
+│   │   ├── EgovAiGatewayAuditService.java          # AI Gateway metadata-only 감사 이벤트
 │   │   ├── EgovSessionAwareChatService.java         # 채팅 서비스 인터페이스
 │   │   ├── EgovChatSessionService.java              # 세션 서비스 인터페이스
 │   │   ├── EgovDocumentService.java                 # 문서 서비스 인터페이스
@@ -301,6 +325,7 @@ spring-ai-rag-redis-stack/
 │   │   └── EgovRedisChatMemoryRepository.java       # ChatMemoryRepository 구현 (Redis)
 │   │
 │   ├── controller/                    # REST 컨트롤러
+│   │   ├── EgovAiGatewayController.java             # OpenGateLLM 상태/라우터/감사 API
 │   │   ├── EgovOllamaChatController.java            # 채팅 API
 │   │   ├── EgovChatSessionController.java           # 세션 API
 │   │   ├── EgovDocumentController.java              # 문서 API

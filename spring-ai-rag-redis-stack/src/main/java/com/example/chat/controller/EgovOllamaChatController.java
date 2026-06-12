@@ -7,16 +7,18 @@ import java.util.Map;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.ollama.OllamaChatModel;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.chat.context.SessionContext;
+import com.example.chat.response.EgovAiGatewayAuditEvent;
 import com.example.chat.response.TechnologyResponse;
+import com.example.chat.service.EgovAiGatewayAuditService;
 import com.example.chat.service.EgovChatSessionService;
 import com.example.chat.service.EgovSessionAwareChatService;
 import com.example.chat.util.EgovJsonPromptTemplates;
@@ -32,9 +34,10 @@ import reactor.core.publisher.Flux;
 @RequiredArgsConstructor
 public class EgovOllamaChatController {
 
-    private final OllamaChatModel chatModel;
+    private final ChatModel chatModel;
     private final EgovSessionAwareChatService egovSessionAwareChatService;
     private final EgovChatSessionService egovChatSessionService;
+    private final EgovAiGatewayAuditService egovAiGatewayAuditService;
 
     /**
      * 일반 응답 생성 (테스트용)
@@ -42,7 +45,15 @@ public class EgovOllamaChatController {
     @GetMapping("/ai/generate")
     public Map<String, String> generate(
             @RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        return Map.of("generation", this.chatModel.call(message));
+        EgovAiGatewayAuditEvent auditEvent = egovAiGatewayAuditService.start("/ai/generate", null, null, false, message);
+        try {
+            Map<String, String> response = Map.of("generation", this.chatModel.call(message));
+            egovAiGatewayAuditService.complete(auditEvent.getRequestId(), "COMPLETE");
+            return response;
+        } catch (RuntimeException e) {
+            egovAiGatewayAuditService.complete(auditEvent.getRequestId(), "ERROR");
+            throw e;
+        }
     }
 
     /**
@@ -52,7 +63,9 @@ public class EgovOllamaChatController {
     public Flux<ChatResponse> generateStream(
             @RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
         Prompt prompt = new Prompt(new UserMessage(message));
-        return this.chatModel.stream(prompt);
+        EgovAiGatewayAuditEvent auditEvent = egovAiGatewayAuditService.start("/ai/generateStream", null, null, false, message);
+        return this.chatModel.stream(prompt)
+                .doFinally(signalType -> egovAiGatewayAuditService.complete(auditEvent.getRequestId(), signalType.name()));
     }
 
     /**
@@ -101,7 +114,10 @@ public class EgovOllamaChatController {
         // 스트림을 반환하기 전 요청 스레드에서 ThreadLocal 세션 컨텍스트를 정리한다.
         // 이전에는 doFinally 안에서 정리했으나, doFinally는 reactor 스레드에서 실행되어
         // 요청(서블릿) 스레드의 ThreadLocal이 정리되지 않고 워커 스레드에 남는 문제가 있었다.
-        Flux<ChatResponse> response = egovSessionAwareChatService.streamRagResponse(message, model);
+        EgovAiGatewayAuditEvent auditEvent = egovAiGatewayAuditService.start(
+                "/ai/rag/stream", model, currentSessionId, true, message);
+        Flux<ChatResponse> response = egovSessionAwareChatService.streamRagResponse(message, model)
+                .doFinally(signalType -> egovAiGatewayAuditService.complete(auditEvent.getRequestId(), signalType.name()));
         SessionContext.clear();
         return response;
     }
@@ -144,7 +160,11 @@ public class EgovOllamaChatController {
         // 서비스가 sessionId를 동기적으로 읽어 처리하므로, 스트림을 반환하기 전
         // 요청 스레드에서 ThreadLocal 세션 컨텍스트를 정리한다.(doFinally는 reactor
         // 스레드에서 실행되어 요청 스레드의 ThreadLocal을 정리하지 못했다.)
-        Flux<ChatResponse> response = egovSessionAwareChatService.streamSimpleResponse(message, model);
+        String currentSessionId = SessionContext.getCurrentSessionId();
+        EgovAiGatewayAuditEvent auditEvent = egovAiGatewayAuditService.start(
+                "/ai/simple/stream", model, currentSessionId, false, message);
+        Flux<ChatResponse> response = egovSessionAwareChatService.streamSimpleResponse(message, model)
+                .doFinally(signalType -> egovAiGatewayAuditService.complete(auditEvent.getRequestId(), signalType.name()));
         SessionContext.clear();
         return response;
     }

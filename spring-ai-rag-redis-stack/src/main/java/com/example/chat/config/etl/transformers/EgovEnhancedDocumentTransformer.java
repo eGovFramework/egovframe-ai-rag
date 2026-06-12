@@ -2,12 +2,12 @@ package com.example.chat.config.etl.transformers;
 
 import java.util.List;
 
+import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentTransformer;
 import org.springframework.ai.model.transformer.SummaryMetadataEnricher;
 import org.springframework.ai.model.transformer.SummaryMetadataEnricher.SummaryType;
 import org.springframework.ai.model.transformer.KeywordMetadataEnricher;
-import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -18,7 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 public class EgovEnhancedDocumentTransformer implements DocumentTransformer {
 
-    private final OllamaChatModel ollamaChatModel;
+    private final ChatModel chatModel;
     private final SummaryMetadataEnricher summaryEnricher;
     private KeywordMetadataEnricher keywordEnricher;
     
@@ -54,12 +54,12 @@ public class EgovEnhancedDocumentTransformer implements DocumentTransformer {
     @Value("${spring.ai.document.keyword-count}")
     private int keywordCount;
 
-    public EgovEnhancedDocumentTransformer(OllamaChatModel ollamaChatModel) {
-        this.ollamaChatModel = ollamaChatModel;
+    public EgovEnhancedDocumentTransformer(ChatModel chatModel) {
+        this.chatModel = chatModel;
         
         // 요약 생성기 초기화 (사용 여부는 설정에 따라 결정)
         this.summaryEnricher = new SummaryMetadataEnricher(
-            ollamaChatModel,
+            chatModel,
             //List.of(SummaryType.CURRENT)
             List.of(SummaryType.PREVIOUS, SummaryType.CURRENT, SummaryType.NEXT)
         );
@@ -116,7 +116,7 @@ public class EgovEnhancedDocumentTransformer implements DocumentTransformer {
             
             // 동적으로 KeywordMetadataEnricher 초기화
             if (keywordEnricher == null) {
-                keywordEnricher = new KeywordMetadataEnricher(ollamaChatModel, keywordCount);
+                keywordEnricher = new KeywordMetadataEnricher(chatModel, keywordCount);
             }
             
             docsWithKeywords = keywordEnricher.apply(splitDocs);

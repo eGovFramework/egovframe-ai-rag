@@ -1,20 +1,24 @@
 package com.example.chat.controller;
 
 import com.example.chat.context.SessionContext;
+import com.example.chat.response.EgovAiGatewayAuditEvent;
+import com.example.chat.service.EgovAiGatewayAuditService;
 import com.example.chat.service.EgovChatSessionService;
 import com.example.chat.service.EgovSessionAwareChatService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.ollama.OllamaChatModel;
 import reactor.core.publisher.Flux;
 
+import java.time.Instant;
 import java.util.Collections;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -32,11 +36,12 @@ import static org.mockito.Mockito.when;
  */
 class EgovOllamaChatControllerSessionCleanupTest {
 
-    private final OllamaChatModel chatModel = mock(OllamaChatModel.class);
+    private final ChatModel chatModel = mock(ChatModel.class);
     private final EgovSessionAwareChatService chatService = mock(EgovSessionAwareChatService.class);
     private final EgovChatSessionService sessionService = mock(EgovChatSessionService.class);
+    private final EgovAiGatewayAuditService auditService = mock(EgovAiGatewayAuditService.class);
     private final EgovOllamaChatController controller =
-            new EgovOllamaChatController(chatModel, chatService, sessionService);
+            new EgovOllamaChatController(chatModel, chatService, sessionService, auditService);
 
     @AfterEach
     void tearDown() {
@@ -50,6 +55,7 @@ class EgovOllamaChatControllerSessionCleanupTest {
         when(sessionService.getSessionMessages("s-1")).thenReturn(Collections.emptyList());
         when(sessionService.generateSessionTitle(anyString())).thenReturn("title");
         when(chatService.streamRagResponse(anyString(), any())).thenReturn(Flux.<ChatResponse>empty());
+        when(auditService.start(anyString(), any(), any(), anyBoolean(), anyString())).thenReturn(newAuditEvent());
 
         controller.streamRagResponse("hello", null, "s-1");
 
@@ -67,11 +73,26 @@ class EgovOllamaChatControllerSessionCleanupTest {
         when(sessionService.getSessionMessages("s-2")).thenReturn(Collections.emptyList());
         when(sessionService.generateSessionTitle(anyString())).thenReturn("title");
         when(chatService.streamSimpleResponse(anyString(), any())).thenReturn(Flux.<ChatResponse>empty());
+        when(auditService.start(anyString(), any(), any(), anyBoolean(), anyString())).thenReturn(newAuditEvent());
 
         controller.streamSimpleResponse("hi", null, "s-2");
 
         assertThat(SessionContext.getCurrentSessionId())
                 .isEqualTo(ChatMemory.DEFAULT_CONVERSATION_ID);
         verify(sessionService).sessionExists("s-2");
+    }
+
+    private EgovAiGatewayAuditEvent newAuditEvent() {
+        return new EgovAiGatewayAuditEvent(
+                "request-id",
+                "/ai/test",
+                "test-model",
+                "test-provider",
+                "test-session",
+                false,
+                "prompt-hash",
+                false,
+                false,
+                Instant.now());
     }
 }

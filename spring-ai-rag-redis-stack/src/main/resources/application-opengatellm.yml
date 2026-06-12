@@ -3,10 +3,13 @@
 
 spring:
   ai:
+    model:
+      chat: openai
     openai:
       base-url: ${OPENGATELLM_BASE_URL:http://localhost:8000}
       api-key: ${OPENGATELLM_API_KEY:change-me}
       chat:
+        completions-path: /v1/chat/completions
         options:
           model: ${OPENGATELLM_MODEL:kr-gov-local-general}
           temperature: 0.2
@@ -15,6 +18,7 @@ egov:
   ai:
     gateway:
       provider: opengatellm
+      route: ${OPENGATELLM_MODEL:kr-gov-local-general}
       default-policy: LOCAL_LLM_FIRST
       audit:
         metadata-only: true

@@ -52,16 +52,21 @@ Spring AI OpenAI starter가 필요하다. `spring-ai-rag-redis-stack/pom.xml`에
 ```yaml
 spring:
   ai:
+    model:
+      chat: openai
     openai:
       base-url: ${OPENGATELLM_BASE_URL:http://localhost:8000}
       api-key: ${OPENGATELLM_API_KEY:change-me}
       chat:
+        completions-path: /v1/chat/completions
         options:
           model: ${OPENGATELLM_MODEL:kr-gov-local-general}
           temperature: 0.2
 ```
 
 OpenGateLLM이 `/v1/chat/completions`를 제공하는 OpenAI 호환 gateway라면, 애플리케이션은 모델 provider의 실제 위치를 알 필요가 없다.
+
+샘플 코드는 `OllamaChatModel` 직접 의존 대신 Spring AI의 공통 `ChatModel`을 사용한다. 기본 profile은 Ollama를 유지하고, `opengatellm` profile을 켜면 같은 `/ai/rag/stream`, `/ai/simple/stream` 엔드포인트가 OpenGateLLM을 경유한다.
 
 ### 3. 실행
 
@@ -72,6 +77,26 @@ java -jar target/spring-ai-rag-redis-stack-1.0.0.jar \
   --OPENGATELLM_API_KEY=change-me \
   --OPENGATELLM_MODEL=kr-gov-local-general
 ```
+
+### 4. 실행 검증
+
+OpenGateLLM profile로 실행한 뒤 다음 순서로 gateway 적용 여부를 확인한다.
+
+```bash
+# 1) 현재 AI Gateway 설정과 감사 정책 확인
+curl http://localhost:8080/api/ai-gateway/status
+
+# 2) OpenGateLLM /v1/models를 통해 라우터 목록 확인
+curl http://localhost:8080/api/ai-gateway/models
+
+# 3) 기존 RAG/일반 채팅 API를 그대로 호출
+curl "http://localhost:8080/ai/simple/stream?message=OpenGateLLM%EC%9D%98%20%EC%97%AD%ED%95%A0%EC%9D%80%3F"
+
+# 4) 애플리케이션 레이어의 metadata-only 감사 이벤트 확인
+curl http://localhost:8080/api/ai-gateway/audit/events
+```
+
+`/api/ai-gateway/audit/events`는 prompt/response 원문을 저장하지 않고 `promptHash`, `requestedModel`, `providerProfile`, `route`, `sessionId`, `latencyMs`, `terminalSignal` 같은 metadata만 반환한다.
 
 ## OpenGateLLM 라우팅 예시
 
@@ -84,7 +109,7 @@ models:
         url: http://ollama:11434/v1
         key: ollama
         model_name: llama32-ko:latest
-        model_hosting_zone: KOR-LOCAL
+        model_hosting_zone: KOR
 
   - name: kr-gov-policy-auto
     type: text-generation
@@ -93,12 +118,12 @@ models:
         url: http://ollama:11434/v1
         key: ollama
         model_name: llama32-ko:latest
-        model_hosting_zone: KOR-LOCAL
+        model_hosting_zone: KOR
       - type: openai
         url: https://external-provider.example/v1
         key: ${EXTERNAL_PROVIDER_API_KEY}
         model_name: fallback-model
-        model_hosting_zone: EXTERNAL-CLOUD
+        model_hosting_zone: WOR
 ```
 
 ## 표준프레임워크 관점의 확장 포인트

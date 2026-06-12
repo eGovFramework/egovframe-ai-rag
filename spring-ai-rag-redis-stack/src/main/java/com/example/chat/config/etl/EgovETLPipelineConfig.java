@@ -1,6 +1,6 @@
 package com.example.chat.config.etl;
 
-import org.springframework.ai.ollama.OllamaChatModel;
+import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.vectorstore.redis.RedisVectorStore;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -36,9 +36,9 @@ public class EgovETLPipelineConfig {
     }
 
     @Bean
-    public EgovEnhancedDocumentTransformer egovEnhancedDocumentTransformer(OllamaChatModel ollamaChatModel) {
+    public EgovEnhancedDocumentTransformer egovEnhancedDocumentTransformer(ChatModel chatModel) {
         log.info("EgovEnhancedDocumentTransformer 빈 생성");
-        return new EgovEnhancedDocumentTransformer(ollamaChatModel);
+        return new EgovEnhancedDocumentTransformer(chatModel);
     }
 
     @Bean
