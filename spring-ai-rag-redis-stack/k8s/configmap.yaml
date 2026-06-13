@@ -10,8 +10,6 @@ data:
   # Sensitive credentials should come from a Secret, not this ConfigMap.
 
   SPRING_AI_OLLAMA_BASE_URL: "http://ollama:11434"
-  SPRING_AI_VECTORSTORE_REDIS_HOST: "redis-stack"
-  SPRING_AI_VECTORSTORE_REDIS_PORT: "6379"
   SPRING_AI_VECTORSTORE_REDIS_INITIALIZE_SCHEMA: "false"
   # spring.data.redis.* — 실제 Redis 연결에 사용되는 속성
   SPRING_DATA_REDIS_HOST: "redis-stack"

@@ -48,10 +48,12 @@ spec:
               memory: "2Gi"
             limits:
               cpu: "2000m"
-              # ONNX 모델을 외부 PVC에서 로딩하므로 이미지 자체는 가볍다.
-              # 런타임에 ONNX 모델 로딩 시 약 1–2GB 메모리가 필요하며,
-              # JVM 힙 + 네이티브 메모리 + DJL 토크나이저 버퍼 여유를 고려하여 4Gi로 설정.
-              memory: "4Gi"
+              # 모델 외부화는 이미지 크기만 줄이고 런타임 메모리 요구량은 거의 동일하다.
+              # TransformersEmbeddingModel 이 OrtSession.create(byte[]) 로 모델 파일 전체를
+              # JVM 힙에 byte[] 로 올린 뒤 ONNX Runtime 에 전달하므로, 로딩 중 JVM 힙(~1.2GB)과
+              # ONNX 네이티브(~1.2GB)가 동시에 필요하고 여기에 JVM 논힙·DJL 버퍼까지 더해진다.
+              # 4Gi 에서는 기동 중 OOMKill 이 발생하므로 8Gi 로 설정한다.
+              memory: "8Gi"
           readinessProbe:
             httpGet:
               path: /actuator/health/readiness
