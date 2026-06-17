@@ -26,11 +26,15 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 public class EgovHwpReader implements DocumentReader {
 
-    @Value("${spring.ai.document.hwp-path}")
+    @Value("${spring.ai.document.hwp-path:#{null}}")
     private String hwpDocumentPath;
 
     @Override
     public List<Document> get() {
+        if (hwpDocumentPath == null || hwpDocumentPath.isBlank()) {
+            log.info("HWP 문서 경로가 설정되지 않아 건너뜁니다.");
+            return List.of();
+        }
         log.info("HWP 문서 읽기 시작 - 경로: {}", hwpDocumentPath);
 
         try {
