@@ -28,13 +28,18 @@ import java.util.List;
 @Component
 public class EgovHwpxReader {
 
-    @Value("${document.hwpx-path}")
+    @Value("${document.hwpx-path:#{null}}")
     private String hwpxDocumentPath;
 
     /**
      * HWPX 문서 로드
      */
     public List<Document> read() {
+        if (hwpxDocumentPath == null || hwpxDocumentPath.isBlank()) {
+            log.info("HWPX 문서 경로가 설정되지 않아 건너뜁니다.");
+            return List.of();
+        }
+
         log.info("HWPX 문서 읽기 시작 - 경로: {}", hwpxDocumentPath);
 
         try {

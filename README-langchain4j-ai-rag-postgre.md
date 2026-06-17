@@ -175,13 +175,13 @@ Flux<String> 스트리밍 응답
 
 ## 문서 인덱싱
 
-- 현재 인덱싱 가능한 문서의 종류는 마크다운 파일과 PDF 파일로 구성되어 있다.
+- 현재 인덱싱 가능한 문서의 종류는 마크다운(`.md`), PDF(`.pdf`), HWPX(`.hwpx`) 파일이다.
 - `application.yml`의 문서 경로 관련 속성에서 확인 가능하다.
 
 ## 실행
 
 1. 애플리케이션을 실행하면 도큐먼트 생성 및 임베딩, 적재가 실행된다. 수동으로 실행하려면 메인 화면의 `문서 재인덱싱` 버튼을 클릭한다.
-2. `문서 업로드` 버튼으로 Markdown/PDF 파일을 업로드할 수 있다.
+2. `문서 업로드` 버튼으로 Markdown 파일을 업로드할 수 있다. PDF 및 HWPX 파일은 `application.yml`의 `document.pdf-path`, `document.hwpx-path`에 지정한 경로에 직접 배치한 뒤 재인덱싱한다.
 3. 메인 화면의 `RAG 채팅 모드`, `일반 채팅 모드` 버튼으로 RAG가 적용된 질의 답변, 일반적인 질의 답변을 받을 수 있다.
 4. 기본 접속 주소: `http://localhost:8080`
 
@@ -236,7 +236,8 @@ langchain4j-ai-rag-postgre/
 │   │   └── etl/                     # 문서 ETL 파이프라인
 │   │       ├── readers/
 │   │       │   ├── EgovMarkdownReader.java   # 마크다운 문서 리더
-│   │       │   └── EgovPdfReader.java       # PDF 문서 리더
+│   │       │   ├── EgovPdfReader.java        # PDF 문서 리더
+│   │       │   └── EgovHwpxReader.java       # HWPX 문서 리더
 │   │       ├── transformers/
 │   │       │   ├── EgovContentFormatTransformer.java   # 콘텐츠 포맷 변환
 │   │       │   └── EgovEnhancedDocumentTransformer.java # 문서 변환
