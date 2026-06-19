@@ -1,0 +1,64 @@
+spring:
+  application:
+    name: spring-ai-rag-redis-test
+
+  ai:
+    ollama:
+      base-url: http://localhost:11434
+      chat:
+        model: test-model
+
+    # 임베딩 모델 비활성화 — ONNX 모델 파일이 test classpath에 없으므로 none 으로 설정
+    model:
+      embedding: none
+
+    vectorstore:
+      redis:
+        initialize-schema: false
+        index-name: test-document-index
+
+    document:
+      path: file:/tmp/data/**/*.md
+      pdf-path: file:/tmp/data/**/*.pdf
+      pdf:
+        page-top-margin: 0
+        pages-per-document: 1
+      enable-summary: false
+      summary-min-chunks: 2
+      enable-keywords: false
+      keyword-count: 5
+      chunk-size: 4000
+      min-chunk-size-chars: 350
+      max-num-chunks: 500
+      min-chunk-length-to-embed: 50
+      normalization:
+        enabled: false
+        remove-html-tags: false
+        remove-code-blocks: false
+        normalize-whitespace: false
+        normalize-newlines: false
+        clean-special-chars: false
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+  main:
+    allow-bean-definition-overriding: true
+
+logging:
+  level:
+    com.example.chat: WARN
+    org.springframework.ai: WARN
+    ai.djl: WARN
+
+rag:
+  enable-query-compression: false
+  similarity:
+    threshold: 0.70
+  top-k: 3
+
+chat:
+  memory:
+    max-messages: 5

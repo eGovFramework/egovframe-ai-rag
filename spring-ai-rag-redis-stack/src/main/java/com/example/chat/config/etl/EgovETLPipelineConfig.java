@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import com.example.chat.config.etl.readers.EgovDocxReader;
+import com.example.chat.config.etl.readers.EgovHwpReader;
 import com.example.chat.config.etl.readers.EgovMarkdownReader;
 import com.example.chat.config.etl.readers.EgovPdfReader;
 import com.example.chat.config.etl.transformers.EgovEnhancedDocumentTransformer;
@@ -34,6 +35,12 @@ public class EgovETLPipelineConfig {
     public EgovPdfReader pdfReader() {
         log.info("EgovPdfReader 빈 생성");
         return new EgovPdfReader();
+    }
+
+    @Bean
+    public EgovHwpReader hwpReader() {
+        log.info("EgovHwpReader 빈 생성");
+        return new EgovHwpReader();
     }
 
     @Bean

@@ -22,11 +22,15 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 public class EgovDocxReader implements DocumentReader {
 
-    @Value("${spring.ai.document.docx-path}")
+    @Value("${spring.ai.document.docx-path:#{null}}")
     private String docxDocumentPath;
 
     @Override
     public List<Document> get() {
+        if (docxDocumentPath == null || docxDocumentPath.isBlank()) {
+            log.info("DOCX 문서 경로가 설정되지 않아 건너뜁니다.");
+            return List.of();
+        }
         log.info("DOCX 문서 읽기 시작 - 경로: {}", docxDocumentPath);
 
         PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
