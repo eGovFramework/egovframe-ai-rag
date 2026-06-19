@@ -79,11 +79,6 @@
             <artifactId>langchain4j-document-parser-apache-pdfbox</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>dev.langchain4j</groupId>
-            <artifactId>langchain4j-easy-rag</artifactId>
-        </dependency>
-
         <!-- LangChain4j Reactor (Flux 스트리밍 지원) -->
         <dependency>
             <groupId>dev.langchain4j</groupId>
