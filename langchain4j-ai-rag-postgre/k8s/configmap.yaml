@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: langchain4j-ai-rag-postgre
+  labels:
+    app.kubernetes.io/name: langchain4j-ai-rag-postgre
+    app.kubernetes.io/part-of: egovframe-ai-rag
+data:
+  # Override application.yml values via Spring relaxed binding.
+  # Sensitive credentials should come from a Secret, not this ConfigMap.
+
+  # Spring DataSource (spring.datasource.*)
+  SPRING_DATASOURCE_URL: "jdbc:postgresql://postgres-pgvector:5432/ragdb"
+  SPRING_DATASOURCE_DRIVER_CLASS_NAME: "org.postgresql.Driver"
+  SPRING_JPA_HIBERNATE_DDL_AUTO: "update"
+
+  # PGVector 전용 연결 설정 (pgvector.*)
+  # application.yml의 pgvector.* 프로퍼티를 오버라이드한다.
+  PGVECTOR_HOST: "postgres-pgvector"
+  PGVECTOR_PORT: "5432"
+  PGVECTOR_DATABASE: "ragdb"
+  PGVECTOR_USERNAME: "postgres"
+
+  # LangChain4j Ollama (langchain4j.ollama.base-url → LANGCHAIN4J_OLLAMA_BASE_URL)
+  LANGCHAIN4J_OLLAMA_BASE_URL: "http://ollama:11434"
+
+  # 임베딩 설정 파일 경로 (app.embedding-config-path → APP_EMBEDDING_CONFIG_PATH)
+  # PVC가 사용자 홈 디렉터리 내용을 /models에 마운트하므로 application.yml 기본값
+  # (${user.home}/langchain4j-Config/Config/embeddingConfig.json)과 동일한 하위 경로를 유지한다.
+  APP_EMBEDDING_CONFIG_PATH: "/models/langchain4j-Config/Config/embeddingConfig.json"
+
+  # embeddingConfig.json의 modelPath/tokenizerPath에 쓰인 ${HOME} 치환 기준 경로.
+  # ConfigUtils.resolvePath가 HOME 환경변수를 우선 사용하므로 PVC 마운트 지점을 지정한다.
+  HOME: "/models"
+
+  # Actuator health probe 활성화
+  MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info"
+  # management.health.probes.enabled (Spring Boot 정식 속성명)
+  MANAGEMENT_HEALTH_PROBES_ENABLED: "true"
