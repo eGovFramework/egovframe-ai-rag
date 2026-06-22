@@ -97,12 +97,13 @@ public class EgovOllamaChatController {
         String currentSessionId = SessionContext.getCurrentSessionId();
         log.debug("현재 세션 컨텍스트 설정됨: {}", currentSessionId);
 
-        return egovSessionAwareChatService.streamRagResponse(message, model)
-                .doFinally(signalType -> {
-                    // 스트리밍 완료 후 컨텍스트 정리
-                    SessionContext.clear();
-                    log.debug("SessionContext 정리 완료 - 세션: {}, 신호: {}", sessionId, signalType);
-                });
+        // 서비스가 sessionId를 동기적으로 읽어 처리하므로(advisor 파라미터로 값 전달),
+        // 스트림을 반환하기 전 요청 스레드에서 ThreadLocal 세션 컨텍스트를 정리한다.
+        // 이전에는 doFinally 안에서 정리했으나, doFinally는 reactor 스레드에서 실행되어
+        // 요청(서블릿) 스레드의 ThreadLocal이 정리되지 않고 워커 스레드에 남는 문제가 있었다.
+        Flux<ChatResponse> response = egovSessionAwareChatService.streamRagResponse(message, model);
+        SessionContext.clear();
+        return response;
     }
 
     /**
@@ -140,12 +141,12 @@ public class EgovOllamaChatController {
         }
 
         // 일반 스트리밍 응답 생성 (RAG 없이)
-        return egovSessionAwareChatService.streamSimpleResponse(message, model)
-                .doFinally(signalType -> {
-                    // 스트리밍 완료 후 컨텍스트 정리
-                    SessionContext.clear();
-                    log.debug("SessionContext 정리 완료 - 세션: {}, 신호: {}", sessionId, signalType);
-                });
+        // 서비스가 sessionId를 동기적으로 읽어 처리하므로, 스트림을 반환하기 전
+        // 요청 스레드에서 ThreadLocal 세션 컨텍스트를 정리한다.(doFinally는 reactor
+        // 스레드에서 실행되어 요청 스레드의 ThreadLocal을 정리하지 못했다.)
+        Flux<ChatResponse> response = egovSessionAwareChatService.streamSimpleResponse(message, model);
+        SessionContext.clear();
+        return response;
     }
 
     // ===== PromptEngineeringUtil 활용 테스트 엔드포인트들 =====

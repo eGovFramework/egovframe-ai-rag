@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: spring-ai-rag-redis
+  labels:
+    app.kubernetes.io/name: spring-ai-rag-redis
+    app.kubernetes.io/part-of: egovframe-ai-rag
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: spring-ai-rag-redis
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http

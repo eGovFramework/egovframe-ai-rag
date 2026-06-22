@@ -1,0 +1,102 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: langchain4j-ai-rag-postgre
+  labels:
+    app.kubernetes.io/name: langchain4j-ai-rag-postgre
+    app.kubernetes.io/part-of: egovframe-ai-rag
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: langchain4j-ai-rag-postgre
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: langchain4j-ai-rag-postgre
+        app.kubernetes.io/part-of: egovframe-ai-rag
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        - name: app
+          # Replace with your registry/tag, e.g. ghcr.io/<org>/langchain4j-ai-rag-postgre:1.0.0
+          image: langchain4j-ai-rag-postgre:1.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: langchain4j-ai-rag-postgre
+          env:
+            # DJL이 네이티브 라이브러리를 user.home/.djl.ai/에 캐시하므로 쓰기 가능한 /tmp로 지정한다.
+            # HOME(=/models, ${HOME} 치환용)과 분리해 readOnlyRootFilesystem 환경에서도 동작하게 한다.
+            - name: JAVA_TOOL_OPTIONS
+              value: "-Duser.home=/tmp"
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: langchain4j-ai-rag-postgre-db
+                  key: username
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: langchain4j-ai-rag-postgre-db
+                  key: password
+            # pgvector.password는 Spring datasource와 별개의 연결 설정이므로 별도 주입
+            - name: PGVECTOR_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: langchain4j-ai-rag-postgre-db
+                  key: password
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "2Gi"
+            limits:
+              cpu: "2000m"
+              # ONNX 임베딩 모델 로딩 시 대용량 메모리가 필요하므로 8Gi로 설정
+              memory: "8Gi"
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            failureThreshold: 3
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            # ONNX 임베딩 모델 및 embeddingConfig.json을 PVC에서 마운트
+            # PVC에 사전 적재 필요: kubectl cp <local-model-dir> <pod>:/models/
+            - name: models
+              mountPath: /models
+              readOnly: true
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: models
+          persistentVolumeClaim:
+            claimName: langchain4j-ai-rag-postgre-models
