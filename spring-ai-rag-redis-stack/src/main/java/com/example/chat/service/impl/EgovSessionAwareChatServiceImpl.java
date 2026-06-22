@@ -1,12 +1,17 @@
 package com.example.chat.service.impl;
 
+import java.util.List;
+
 import org.egovframe.rte.fdl.cmmn.EgovAbstractServiceImpl;
+
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.ChatClient.ChatClientRequestSpec;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.converter.StructuredOutputConverter;
 import org.springframework.beans.factory.annotation.Value;
@@ -73,12 +78,17 @@ public class EgovSessionAwareChatServiceImpl extends EgovAbstractServiceImpl imp
                     .advisors(messageChatMemoryAdvisor, ragAdvisor)
                     .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, sessionId))
                     .stream()
-                    .chatResponse();
+                    .chatResponse()
+                    .onErrorResume(e -> {
+                        log.error("RAG 스트리밍 중 오류 발생 - 세션: {}", sessionId, e);
+                        String fallbackMessage = fallbackHandler.getFallbackMessage(e);
+                        return Flux.just(new ChatResponse(List.of(new Generation(new AssistantMessage(fallbackMessage)))));
+                    });
 
         } catch (Exception e) {
             log.error("세션별 RAG 스트리밍 응답 생성 중 오류 발생 - 세션: {}", sessionId, e);
             String fallbackMessage = fallbackHandler.getFallbackMessage(e);
-            return Flux.error(new IllegalStateException(fallbackMessage, e));
+            return Flux.just(new ChatResponse(List.of(new Generation(new AssistantMessage(fallbackMessage)))));
         }
     }
 
@@ -102,12 +112,17 @@ public class EgovSessionAwareChatServiceImpl extends EgovAbstractServiceImpl imp
                     .advisors(messageChatMemoryAdvisor)
                     .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, sessionId))
                     .stream()
-                    .chatResponse();
+                    .chatResponse()
+                    .onErrorResume(e -> {
+                        log.error("일반 스트리밍 중 오류 발생 - 세션: {}", sessionId, e);
+                        String fallbackMessage = fallbackHandler.getFallbackMessage(e);
+                        return Flux.just(new ChatResponse(List.of(new Generation(new AssistantMessage(fallbackMessage)))));
+                    });
 
         } catch (Exception e) {
             log.error("세션별 일반 스트리밍 응답 생성 중 오류 발생 - 세션: {}", sessionId, e);
             String fallbackMessage = fallbackHandler.getFallbackMessage(e);
-            return Flux.error(new IllegalStateException(fallbackMessage, e));
+            return Flux.just(new ChatResponse(List.of(new Generation(new AssistantMessage(fallbackMessage)))));
         }
     }
 
