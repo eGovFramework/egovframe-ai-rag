@@ -101,7 +101,7 @@ public class EgovHwpxReader {
             String content = TextExtractor.extract(
                     hwpxFile,
                     TextExtractMethod.InsertControlTextBetweenParagraphText,
-                    true,
+                    false,
                     null);
 
             if (content == null || content.trim().isEmpty()) {

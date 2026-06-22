@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: langchain4j-ai-rag-postgre-models
+  labels:
+    app.kubernetes.io/name: langchain4j-ai-rag-postgre
+    app.kubernetes.io/part-of: egovframe-ai-rag
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+  # storageClassName: standard  # 클러스터 환경에 맞게 수정 (미지정 시 기본 StorageClass 사용)

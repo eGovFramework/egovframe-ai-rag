@@ -1,0 +1,98 @@
+spring:
+  application:
+    name: langchain4j-ai-rag-postgre-test
+
+  # H2 데이터베이스 설정 (테스트용)
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+    hikari:
+      maximum-pool-size: 5
+
+  # JPA 설정 (H2용 Dialect)
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: true
+    show-sql: true
+
+  # 빈 오버라이딩 허용
+  main:
+    allow-bean-definition-overriding: true
+
+# 애플리케이션 설정
+app:
+  # ONNX 임베딩 모델 설정 파일 경로 (테스트 시 dummy)
+  embedding-config-path: src/test/resources/dummy-embedding-config.json
+
+# LangChain4j Ollama 설정 (테스트 시 dummy)
+langchain4j:
+  ollama:
+    base-url: http://localhost:11434
+    chat-model:
+      model-name: HyperCLOVA-3b:Q4_K_MM
+      temperature: 0.4
+      timeout: 60s
+
+# PGVector 설정 (테스트 시 dummy)
+pgvector:
+  host: localhost
+  port: 5432
+  database: ragdb
+  username: postgres
+  password: postgres
+  table-name: document_embeddings
+  dimension: 768
+  create-table: false
+  distance-type: cosine
+
+# 문서 처리 설정
+document:
+  path: file:src/test/resources/non-existent-directory/*.md
+  pdf-path: file:src/test/resources/non-existent-directory/*.pdf
+
+  pdf:
+    page-top-margin: 0
+    pages-per-document: 1
+
+  chunk-size: 4000
+  min-chunk-size-chars: 350
+  max-num-chunks: 500
+  min-chunk-length-to-embed: 50
+
+  normalization:
+    enabled: true
+    remove-html-tags: true
+    remove-code-blocks: false
+    normalize-whitespace: true
+    normalize-newlines: true
+    clean-special-chars: true
+
+# RAG 설정
+rag:
+  similarity:
+    threshold: 0.70
+  top-k: 3
+
+# 채팅 메모리 설정
+chat:
+  memory:
+    max-messages: 20
+    table-name: chat_memory
+
+# 세션 관리 설정
+session:
+  table-name: chat_sessions
+
+# 로깅 설정
+logging:
+  level:
+    com.example.chat: DEBUG
+    dev.langchain4j: INFO
+    ai.djl: WARN
+    org.hibernate.SQL: DEBUG

@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spring-ai-rag-redis
+  labels:
+    app.kubernetes.io/name: spring-ai-rag-redis
+    app.kubernetes.io/part-of: egovframe-ai-rag
+data:
+  # Override application.yml values via Spring relaxed binding.
+  # Sensitive credentials should come from a Secret, not this ConfigMap.
+
+  SPRING_AI_OLLAMA_BASE_URL: "http://ollama:11434"
+  SPRING_AI_VECTORSTORE_REDIS_INITIALIZE_SCHEMA: "false"
+  # spring.data.redis.* — 실제 Redis 연결에 사용되는 속성
+  SPRING_DATA_REDIS_HOST: "redis-stack"
+  SPRING_DATA_REDIS_PORT: "6379"
+  SPRING_AI_DOCUMENT_PATH: "file:/workspace/data/**/*.md"
+  SPRING_AI_DOCUMENT_PDF_PATH: "file:/workspace/data/**/*.pdf"
+
+  # ONNX 임베딩 모델을 PVC 마운트 경로에서 로드하도록 지정.
+  # application.yml의 file:${EMBEDDING_MODEL_PATH} / file:${EMBEDDING_TOKENIZER_PATH}를 오버라이드한다.
+  # PVC 내 디렉터리 구조: /models/spring-ai-Config/model/{model.onnx, tokenizer.json}
+  EMBEDDING_MODEL_PATH: "/models/spring-ai-Config/model/model.onnx"
+  EMBEDDING_TOKENIZER_PATH: "/models/spring-ai-Config/model/tokenizer.json"
+
+  # Actuator health probe 활성화 (/readiness, /liveness)
+  # management.health.probes.enabled (Spring Boot 정식 속성명)
+  MANAGEMENT_HEALTH_PROBES_ENABLED: "true"
+  MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info"
