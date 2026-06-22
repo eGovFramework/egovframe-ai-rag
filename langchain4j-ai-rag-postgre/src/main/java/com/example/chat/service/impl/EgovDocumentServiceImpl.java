@@ -1,5 +1,6 @@
 package com.example.chat.service.impl;
 
+import com.example.chat.config.etl.readers.EgovExcelReader;
 import com.example.chat.config.etl.readers.EgovHwpReader;
 import com.example.chat.config.etl.readers.EgovMarkdownReader;
 import com.example.chat.config.etl.readers.EgovPdfReader;
@@ -40,6 +41,7 @@ public class EgovDocumentServiceImpl extends EgovAbstractServiceImpl implements 
     // ETL 파이프라인 컴포넌트들
     private final EgovMarkdownReader egovMarkdownReader;
     private final EgovPdfReader egovPdfReader;
+    private final EgovExcelReader egovExcelReader;
     private final EgovHwpReader egovHwpReader;
     private final EgovContentFormatTransformer egovContentFormatTransformer;
     private final EgovEnhancedDocumentTransformer egovEnhancedDocumentTransformer;
@@ -92,19 +94,21 @@ public class EgovDocumentServiceImpl extends EgovAbstractServiceImpl implements 
 
         return CompletableFuture.supplyAsync(() -> {
             try {
-                // 1단계: 마크다운, PDF, HWP 문서 읽기
+                // 1단계: 마크다운, PDF, Excel(xlsx), HWP 문서 읽기
                 List<Document> markdownDocuments = egovMarkdownReader.read();
                 List<Document> pdfDocuments = egovPdfReader.read();
+                List<Document> excelDocuments = egovExcelReader.read();
                 List<Document> hwpDocuments = egovHwpReader.read();
 
                 List<Document> allDocuments = new ArrayList<>();
                 allDocuments.addAll(markdownDocuments);
                 allDocuments.addAll(pdfDocuments);
+                allDocuments.addAll(excelDocuments);
                 allDocuments.addAll(hwpDocuments);
 
                 totalCount.set(allDocuments.size());
-                log.info("총 {}개의 문서를 로드했습니다. (마크다운: {}개, PDF: {}개, HWP: {}개)",
-                        allDocuments.size(), markdownDocuments.size(), pdfDocuments.size(), hwpDocuments.size());
+                log.info("총 {}개의 문서를 로드했습니다. (마크다운: {}개, PDF: {}개, Excel: {}개, HWP: {}개)",
+                        allDocuments.size(), markdownDocuments.size(), pdfDocuments.size(), excelDocuments.size(), hwpDocuments.size());
 
                 // 2단계: 변경된 문서 필터링
                 List<Document> changedDocuments = filterChangedDocuments(allDocuments);

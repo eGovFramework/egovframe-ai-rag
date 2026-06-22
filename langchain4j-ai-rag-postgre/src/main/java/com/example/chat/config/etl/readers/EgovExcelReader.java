@@ -27,13 +27,17 @@ import java.util.StringJoiner;
 @Component
 public class EgovExcelReader {
 
-    @Value("${document.excel-path:classpath:documents/*.xlsx}")
+    @Value("${document.xlsx-path:#{null}}")
     private String excelDocumentPath;
 
     /**
      * Excel 문서 로드
      */
     public List<Document> read() {
+        if (excelDocumentPath == null || excelDocumentPath.isBlank()) {
+            log.info("Excel(xlsx) 문서 경로가 설정되지 않아 건너뜁니다.");
+            return List.of();
+        }
         log.info("Excel 문서 읽기 시작 - 경로: {}", excelDocumentPath);
 
         try {
