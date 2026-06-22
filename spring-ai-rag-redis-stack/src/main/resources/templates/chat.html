@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Spring AI RAG 채팅</title>
     <script src="/js/marked.min.js"></script>
+    <script src="/js/purify.min.js"></script>
     <style>
         body {
             font-family: 'Noto Sans KR', Arial, sans-serif;
@@ -568,7 +569,7 @@
                 }
                 
                 sessionDiv.innerHTML = `
-                    <div class="session-title">${session.title}</div>
+                    <div class="session-title">${escapeHtml(session.title)}</div>
                     <div class="session-time">${timeText}</div>
                     <div class="session-actions">
                         <button class="session-action-btn" onclick="deleteSession('${session.sessionId}', event)">삭제</button>
@@ -837,7 +838,7 @@
             } else {
                 // AI 메시지는 마크다운 파싱 적용
                 try {
-                    messageDiv.innerHTML = marked.parse(text);
+                    messageDiv.innerHTML = DOMPurify.sanitize(marked.parse(text));
                 } catch (markdownError) {
                     console.error('마크다운 변환 오류:', markdownError);
                     messageDiv.innerHTML = `<pre style="white-space: pre-wrap; font-family: inherit; margin: 0;">${escapeHtml(text)}</pre>`;
@@ -908,7 +909,7 @@
                         
                         // 마크다운을 HTML로 변환 (marked.js 사용)
                         try {
-                            aiMessageDiv.innerHTML = marked.parse(fullResponse);
+                            aiMessageDiv.innerHTML = DOMPurify.sanitize(marked.parse(fullResponse));
                         } catch (markdownError) {
                             // 마크다운 변환 오류 시 기본 텍스트로 표시
                             console.error('마크다운 변환 오류:', markdownError);

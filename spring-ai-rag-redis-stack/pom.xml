@@ -47,6 +47,12 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-logging</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -85,6 +91,12 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-thymeleaf</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-logging</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -107,6 +119,12 @@
 				</exclusion>
 			</exclusions>
 		</dependency>
+        <!-- HWP 문서 파싱 (공공 행정문서 지원) -->
+        <dependency>
+            <groupId>kr.dogfoot</groupId>
+            <artifactId>hwplib</artifactId>
+            <version>1.1.9</version>
+        </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LangChain4j RAG 채팅</title>
     <script src="/js/marked.min.js"></script>
+    <script src="/js/purify.min.js"></script>
     <style>
         body {
             font-family: 'Noto Sans KR', Arial, sans-serif;
@@ -582,7 +583,7 @@
                 }
 
                 sessionDiv.innerHTML = `
-                    <div class="session-title">${session.title}</div>
+                    <div class="session-title">${escapeHtml(session.title)}</div>
                     <div class="session-time">${timeText}</div>
                     <div class="session-actions">
                         <button class="session-action-btn" onclick="deleteSession('${session.sessionId}', event)">삭제</button>
@@ -855,7 +856,7 @@
                         breaks: true,
                         gfm: true
                     };
-                    const html = marked.parse(text, markedOptions);
+                    const html = DOMPurify.sanitize(marked.parse(text, markedOptions));
                     messageDiv.innerHTML = html;
                     
                     // 공백 보존을 위해 모든 p 태그에 white-space: pre-wrap 적용
@@ -951,7 +952,7 @@
                             breaks: true,  // 단일 줄바꿈도 <br>로 변환
                             gfm: true     // GitHub Flavored Markdown 활성화
                         };
-                        const html = marked.parse(fullResponse, markedOptions);
+                        const html = DOMPurify.sanitize(marked.parse(fullResponse, markedOptions));
                         aiMessageDiv.innerHTML = html;
                         
                         // 공백 보존을 위해 모든 p 태그에 white-space: pre-wrap 적용

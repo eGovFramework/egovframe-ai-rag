@@ -66,6 +66,7 @@ document:
   # 문서 경로 설정
   path: file:C:/workspace-test/upload/data/**/*.md
   pdf-path: file:C:/workspace-test/upload/data/**/*.pdf
+  # hwp-path: file:C:/workspace-test/upload/data/**/*.hwp
 
   # PDF 리더 설정
   pdf:
