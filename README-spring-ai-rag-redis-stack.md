@@ -214,8 +214,24 @@ Flux<ChatResponse> 스트리밍 응답
 
 ## 문서 인덱싱
 
-- 현재 인덱싱 가능한 문서의 종류는 마크다운 파일, PDF 파일, HWP 파일이다.
-- `application.yml` 의 `spring.ai.document.path`, `spring.ai.document.pdf-path`, `spring.ai.document.hwp-path` 에서 확인 가능하다. HWP 경로 속성이 없으면 HWP 처리를 건너뛴다.
+- 현재 인덱싱 가능한 문서의 종류는 마크다운, PDF, HWP, HWPX 파일로 구성되어 있다.
+- `application.yml` 의 `spring.ai.document.path`, `spring.ai.document.pdf-path`, `spring.ai.document.hwp-path`, `spring.ai.document.hwpx-path` 에서 확인 가능하다. 경로 속성이 없으면 해당 형식의 처리를 건너뛴다.
+
+### HWP / HWPX 문서 활성화
+
+`application.yml`의 `hwp-path`, `hwpx-path` 항목은 기본적으로 주석 처리되어 있다. 해당 형식 파일을 인덱싱하려면 주석을 해제하고 경로를 설정한다.
+
+```yaml
+spring:
+  ai:
+    document:
+      # hwp-path 주석 해제 후 실제 경로로 변경
+      hwp-path: file:C:/workspace-test/upload/data/**/*.hwp
+      # hwpx-path 주석 해제 후 실제 경로로 변경
+      hwpx-path: file:C:/workspace-test/upload/data/**/*.hwpx
+```
+
+경로를 설정하지 않으면 해당 리더는 건너뛰며, 다른 형식의 문서 처리에는 영향을 주지 않는다.
 
 ## 실행
 
@@ -278,7 +294,8 @@ spring-ai-rag-redis-stack/
 │   │   │   ├── readers/
 │   │   │   │   ├── EgovMarkdownReader.java         # 마크다운 리더
 │   │   │   │   ├── EgovPdfReader.java              # PDF 리더
-│   │   │   │   └── EgovHwpReader.java              # HWP 리더
+│   │   │   │   ├── EgovHwpReader.java              # HWP 리더
+│   │   │   │   └── EgovHwpxReader.java             # HWPX 리더
 │   │   │   ├── transformers/
 │   │   │   │   ├── EgovContentFormatTransformer.java    # 문서 정규화
 │   │   │   │   └── EgovEnhancedDocumentTransformer.java # 청킹, 메타데이터
@@ -531,6 +548,7 @@ image: <레지스트리>/spring-ai-rag-redis:1.0.0
 | `SPRING_DATA_REDIS_PORT` | `spring.data.redis.port` | `6379` | Redis 연결 포트 |
 | `SPRING_AI_DOCUMENT_PATH` | `spring.ai.document.path` | `file:/workspace/data/**/*.md` | 문서 경로 (글로브 패턴) |
 | `SPRING_AI_DOCUMENT_PDF_PATH` | `spring.ai.document.pdf-path` | `file:/workspace/data/**/*.pdf` | PDF 문서 경로 |
+| `SPRING_AI_DOCUMENT_HWPX_PATH` | `spring.ai.document.hwpx-path` | (미설정 시 HWPX 건너뜀) | HWPX 문서 경로 |
 | `EMBEDDING_MODEL_PATH` | `spring.ai.embedding.transformer.onnx.modelUri` 내 치환 | `/models/spring-ai-Config/model/model.onnx` | ONNX 모델 경로 (PVC) |
 | `EMBEDDING_TOKENIZER_PATH` | `spring.ai.embedding.transformer.tokenizer.uri` 내 치환 | `/models/spring-ai-Config/model/tokenizer.json` | 토크나이저 경로 (PVC) |
 | `MANAGEMENT_HEALTH_PROBES_ENABLED` | `management.health.probes.enabled` | `true` | K8s readiness/liveness probe 활성화 |
