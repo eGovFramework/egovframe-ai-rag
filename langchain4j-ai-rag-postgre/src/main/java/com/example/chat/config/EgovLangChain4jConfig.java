@@ -202,7 +202,7 @@ public class EgovLangChain4jConfig implements InitializingBean {
      * ONNX 임베딩 모델 빈
      */
     @Bean
-    public EmbeddingModel embeddingModel() {
+    EmbeddingModel embeddingModel() {
         return this.embeddingModel;
     }
 
@@ -210,7 +210,7 @@ public class EgovLangChain4jConfig implements InitializingBean {
      * Ollama 채팅 모델 빈 (비스트리밍)
      */
     @Bean
-    public OllamaChatModel chatLanguageModel() {
+    OllamaChatModel chatLanguageModel() {
         log.info("Initializing Ollama Chat Model...");
         log.info("Base URL: {}", ollamaBaseUrl);
         log.info("Model name: {}", ollamaModelName);
@@ -228,7 +228,7 @@ public class EgovLangChain4jConfig implements InitializingBean {
      * Ollama 스트리밍 채팅 모델 빈
      */
     @Bean
-    public OllamaStreamingChatModel streamingChatLanguageModel() {
+    OllamaStreamingChatModel streamingChatLanguageModel() {
         log.info("Initializing Ollama Streaming Chat Model...");
 
         return OllamaStreamingChatModel.builder()
@@ -243,7 +243,7 @@ public class EgovLangChain4jConfig implements InitializingBean {
      * PGVector 임베딩 저장소 빈
      */
     @Bean
-    public EmbeddingStore<TextSegment> embeddingStore() {
+    EmbeddingStore<TextSegment> embeddingStore() {
         log.info("Initializing PGVector Embedding Store...");
         log.info("Host: {}:{}/{}", pgvectorHost, pgvectorPort, pgvectorDatabase);
         log.info("Table name: {}", pgvectorTableName);

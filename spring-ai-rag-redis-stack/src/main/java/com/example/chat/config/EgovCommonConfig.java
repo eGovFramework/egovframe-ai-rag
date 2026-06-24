@@ -11,7 +11,7 @@ import org.springframework.context.annotation.Configuration;
 public class EgovCommonConfig {
 
     @Bean(name = "leaveaTrace")
-    public LeaveaTrace leaveaTrace() {
+    LeaveaTrace leaveaTrace() {
         return new LeaveaTrace();
     }
 }

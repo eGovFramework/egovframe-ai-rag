@@ -31,7 +31,7 @@ public class EgovRagConfig {
     private int topK;
 
     @Bean
-    public ChatClient chatClient(OllamaChatModel chatModel) {
+    ChatClient chatClient(OllamaChatModel chatModel) {
         log.info("ChatClient 구성: 기본 어드바이저 없이 생성 (세션별 동적 추가)");
         
         return ChatClient.builder(chatModel)
@@ -39,7 +39,7 @@ public class EgovRagConfig {
     }
 
     @Bean
-    public VectorStoreDocumentRetriever vectorStoreDocumentRetriever(RedisVectorStore redisVectorStore) {
+    VectorStoreDocumentRetriever vectorStoreDocumentRetriever(RedisVectorStore redisVectorStore) {
         log.info("VectorStoreDocumentRetriever 빈 생성 - 유사도 임계값: {}, Top K: {}", similarityThreshold, topK);
 
         return VectorStoreDocumentRetriever.builder()

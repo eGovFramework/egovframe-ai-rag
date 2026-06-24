@@ -13,7 +13,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class EgovAsyncConfig implements WebMvcConfigurer {
 
     @Bean(name = "documentProcessingExecutor")
-    public Executor documentProcessingExecutor() {
+    Executor documentProcessingExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(2);
         executor.setMaxPoolSize(4);

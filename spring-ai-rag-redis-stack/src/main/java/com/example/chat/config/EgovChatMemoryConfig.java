@@ -16,7 +16,7 @@ public class EgovChatMemoryConfig {
     private int maxMessages;
     
     @Bean
-    public ChatMemory chatMemory(EgovRedisChatMemoryRepository redisChatMemoryRepository) {
+    ChatMemory chatMemory(EgovRedisChatMemoryRepository redisChatMemoryRepository) {
         return MessageWindowChatMemory.builder()
                 .chatMemoryRepository(redisChatMemoryRepository)
                 .maxMessages(maxMessages) // 설정을 통해 유지 메시지 수 조정
@@ -24,7 +24,7 @@ public class EgovChatMemoryConfig {
     }
     
     @Bean
-    public MessageChatMemoryAdvisor messageChatMemoryAdvisor(ChatMemory chatMemory) {
+    MessageChatMemoryAdvisor messageChatMemoryAdvisor(ChatMemory chatMemory) {
         return MessageChatMemoryAdvisor.builder(chatMemory)
                 .build();
     }
