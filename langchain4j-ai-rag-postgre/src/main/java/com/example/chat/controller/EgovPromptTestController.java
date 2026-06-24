@@ -1,5 +1,6 @@
 package com.example.chat.controller;
 
+import com.example.chat.util.EgovPromptTemplateManager;
 import com.example.chat.util.PromptEngineeringUtil;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.chat.request.ChatRequest;
@@ -24,6 +25,12 @@ import java.util.stream.Collectors;
 @RequestMapping("/ai/prompt")
 public class EgovPromptTestController {
 
+    private final EgovPromptTemplateManager promptTemplateManager;
+
+    public EgovPromptTestController(EgovPromptTemplateManager promptTemplateManager) {
+        this.promptTemplateManager = promptTemplateManager;
+    }
+
     @Value("${langchain4j.ollama.base-url}")
     private String ollamaBaseUrl;
 
@@ -35,13 +42,14 @@ public class EgovPromptTestController {
 
     /**
      * Zero-shot 패턴 테스트
+     * 프롬프트는 classpath:prompts/prompt-templates.yml 의 prompts.zero-shot 에서 로드됩니다.
      */
     @GetMapping(value = "/zero-shot", produces = MediaType.TEXT_PLAIN_VALUE)
     public String testZeroShot(
             @RequestParam(value = "query", defaultValue = "Spring Boot의 주요 특징을 설명해주세요") String query) {
         log.info("Zero-shot 패턴 테스트 - 쿼리: {}", query);
 
-        String systemPrompt = PromptEngineeringUtil.createZeroShotPrompt();
+        String systemPrompt = promptTemplateManager.get("zero-shot");
         String fullPrompt = systemPrompt + "\n\nQuestion: " + query;
 
         OllamaChatModel chatModel = createChatModel();
@@ -53,6 +61,7 @@ public class EgovPromptTestController {
 
     /**
      * 컨텍스트 기반 답변 패턴 테스트
+     * 프롬프트는 classpath:prompts/prompt-templates.yml 의 prompts.context-based 에서 로드됩니다.
      */
     @PostMapping(value = "/context-based", produces = MediaType.TEXT_PLAIN_VALUE)
     public String testContextBased(
@@ -64,7 +73,7 @@ public class EgovPromptTestController {
             context = "Spring Boot는 스프링 기반 애플리케이션을 쉽게 만들 수 있도록 도와주는 프레임워크입니다. 자동 구성(Auto-configuration) 기능을 통해 개발자가 직접 설정하지 않아도 대부분의 설정이 자동으로 이루어집니다.";
         }
 
-        String systemPrompt = PromptEngineeringUtil.createContextBasedPrompt(context);
+        String systemPrompt = promptTemplateManager.render("context-based", Map.of("context", context));
         String fullPrompt = systemPrompt + "\n\nQuestion: " + query;
 
         OllamaChatModel chatModel = createChatModel();
@@ -87,7 +96,7 @@ public class EgovPromptTestController {
             context = "LangChain4j는 Java 애플리케이션에서 LLM을 쉽게 사용할 수 있도록 돕는 라이브러리입니다. RAG(Retrieval-Augmented Generation), 채팅 메모리, 도구 사용 등의 기능을 제공합니다.";
         }
 
-        String systemPrompt = PromptEngineeringUtil.createFewShotLearningPrompt(context);
+        String systemPrompt = promptTemplateManager.render("few-shot-learning", Map.of("context", context));
         String fullPrompt = systemPrompt + "\n\nQuestion: " + query;
 
         OllamaChatModel chatModel = createChatModel();
