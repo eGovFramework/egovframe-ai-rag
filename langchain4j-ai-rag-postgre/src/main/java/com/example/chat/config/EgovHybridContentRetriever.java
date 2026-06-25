@@ -34,6 +34,9 @@ public class EgovHybridContentRetriever implements ContentRetriever {
     /** lexical 검색 대상 테이블의 텍스트 컬럼명. PgVectorEmbeddingStore 기본값. */
     private static final String TEXT_COLUMN = "text";
 
+    /** SQL에서 metadata JSON으로부터 추출한 id 별칭 컬럼명. */
+    private static final String DOC_ID_COLUMN = "doc_id";
+
     private final ContentRetriever denseRetriever;
     private final JdbcTemplate jdbcTemplate;
     private final String tableName;
@@ -96,22 +99,26 @@ public class EgovHybridContentRetriever implements ContentRetriever {
      * {@code text % ?} 연산자로 후보를 거른 뒤 similarity 내림차순으로 정렬한다.
      */
     private List<Content> lexicalSearch(String queryText) {
-        String sql = "SELECT " + TEXT_COLUMN + ", metadata FROM " + tableName
+        // id는 SQL단에서 metadata::jsonb ->> 'id'로 추출한다. 이렇게 하면 dense 채널의
+        // Metadata.getString("id")와 동일한 문자열 값이 보장되어(숫자형·중첩·이스케이프
+        // 무관) 융합 키가 채널 간 일치한다. ::jsonb 캐스팅으로 metadata가 text든 jsonb든
+        // 안전하게 동작한다.
+        String sql = "SELECT " + TEXT_COLUMN + ", metadata::jsonb ->> 'id' AS " + DOC_ID_COLUMN
+                + " FROM " + tableName
                 + " WHERE " + TEXT_COLUMN + " % ? ORDER BY similarity(" + TEXT_COLUMN + ", ?) DESC LIMIT ?";
 
         return jdbcTemplate.query(sql, (rs, rowNum) -> {
             String text = rs.getString(TEXT_COLUMN);
-            String metadataJson = rs.getString("metadata");
-            return toContent(text, metadataJson);
+            String docId = rs.getString(DOC_ID_COLUMN);
+            return toContent(text, docId);
         }, queryText, queryText, topK);
     }
 
-    /** lexical 결과 행을 Content로 변환한다. metadata JSON의 id만 보존한다. */
-    private Content toContent(String text, String metadataJson) {
+    /** lexical 결과 행을 Content로 변환한다. SQL로 추출한 id만 보존한다. */
+    private Content toContent(String text, String docId) {
         Metadata metadata = new Metadata();
-        String id = extractId(metadataJson);
-        if (id != null) {
-            metadata.put("id", id);
+        if (docId != null && !docId.isBlank()) {
+            metadata.put("id", docId);
         }
         return Content.from(TextSegment.from(text, metadata));
     }
@@ -131,40 +138,22 @@ public class EgovHybridContentRetriever implements ContentRetriever {
 
     /**
      * 융합 키 산출: 메타데이터 {@code id} 우선, 없으면 텍스트 해시.
+     *
+     * <p>dense 채널은 langchain4j {@code Metadata.getString("id")}로, lexical 채널은
+     * SQL {@code metadata::jsonb ->> 'id'}로 동일한 {@code id} 값을 보존하므로 같은
+     * 문서는 양 채널에서 동일한 융합 키를 가진다.</p>
      */
     private String fusionKey(TextSegment segment) {
         String id = segment.metadata() != null ? segment.metadata().getString("id") : null;
         if (id != null && !id.isBlank()) {
             return "id:" + id;
         }
+        // id가 없을 때만 텍스트 해시로 폴백한다. 빈/null 텍스트는 dedup 과도 병합을
+        // 막기 위해 별도 키로 분리한다.
         String text = segment.text() == null ? "" : segment.text().trim();
+        if (text.isEmpty()) {
+            return "empty:" + System.identityHashCode(segment);
+        }
         return "hash:" + DocumentHashUtil.calculateHash(text);
-    }
-
-    /**
-     * metadata JSON 문자열에서 {@code "id"} 값을 추출한다.
-     * 정식 JSON 파서 의존을 피하기 위해 단순 키 탐색만 수행하며, 실패 시 null.
-     */
-    private String extractId(String metadataJson) {
-        if (metadataJson == null) {
-            return null;
-        }
-        int keyIdx = metadataJson.indexOf("\"id\"");
-        if (keyIdx < 0) {
-            return null;
-        }
-        int colon = metadataJson.indexOf(':', keyIdx + 4);
-        if (colon < 0) {
-            return null;
-        }
-        int firstQuote = metadataJson.indexOf('"', colon + 1);
-        if (firstQuote < 0) {
-            return null;
-        }
-        int secondQuote = metadataJson.indexOf('"', firstQuote + 1);
-        if (secondQuote < 0) {
-            return null;
-        }
-        return metadataJson.substring(firstQuote + 1, secondQuote);
     }
 }

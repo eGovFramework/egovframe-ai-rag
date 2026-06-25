@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 
+import java.sql.ResultSet;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -135,5 +136,63 @@ class EgovHybridContentRetrieverTest {
         // 동일 키로 합쳐져 단일 결과
         assertThat(result).hasSize(1);
         assertThat(result.get(0).textSegment().text()).isEqualTo("same text body");
+    }
+
+    @Test
+    @DisplayName("dense 와 lexical 이 같은 id 문서를 반환하면 융합 키가 일치해 RRF 보강이 일어난다")
+    void crossChannelReinforcementWhenSameId() {
+        ContentRetriever dense = mock(ContentRetriever.class);
+        JdbcTemplate jdbc = mock(JdbcTemplate.class);
+
+        // SAME 은 dense 에서도 lexical 에서도 중위권이지만, 같은 id 로 양 채널에 등장하므로
+        // 융합 시 순위 역수가 합산되어 단일 채널 상위 문서보다 위로 올라와야 한다.
+        when(dense.retrieve(any(Query.class))).thenReturn(List.of(
+                content("DTOP", "dense top"),
+                content("SAME", "shared body")));
+        stubLexical(jdbc, List.of(
+                content("LTOP", "lexical top"),
+                content("SAME", "shared body")));
+
+        EgovHybridContentRetriever retriever =
+                new EgovHybridContentRetriever(dense, jdbc, TABLE, 1.0, 1.0, 3);
+
+        List<Content> result = retriever.retrieve(Query.from("shared"));
+
+        // SAME: dense r1(1/61) + lexical r1(1/61) = 2/61 > DTOP(1/60) = LTOP(1/60)
+        assertThat(result.get(0).textSegment().metadata().getString("id")).isEqualTo("SAME");
+        // 양 채널이 동일 키로 합쳐져 중복 없이 3개만 남는다(SAME, DTOP, LTOP)
+        assertThat(result).hasSize(3);
+    }
+
+    @Test
+    @DisplayName("숫자형 id 도 SQL doc_id 컬럼으로 추출되어 dense 와 키가 일치한다(파싱 의존 제거)")
+    void numericIdMatchesViaSqlDocIdColumn() throws Exception {
+        ContentRetriever dense = mock(ContentRetriever.class);
+        JdbcTemplate jdbc = mock(JdbcTemplate.class);
+
+        // dense: id 가 따옴표 없는 숫자형이었더라도 langchain4j Metadata 에는 문자열 "42" 로 보존
+        when(dense.retrieve(any(Query.class))).thenReturn(List.of(
+                content("42", "numeric id body")));
+
+        // lexical: 실제 RowMapper 를 실행해 SQL doc_id 컬럼 경로를 검증한다.
+        // metadata::jsonb ->> 'id' 는 숫자형 id 도 문자열 "42" 로 반환한다.
+        ResultSet rs = mock(ResultSet.class);
+        when(rs.getString("text")).thenReturn("numeric id body");
+        when(rs.getString("doc_id")).thenReturn("42");
+
+        when(jdbc.query(anyString(), any(RowMapper.class), anyString(), anyString(), anyInt()))
+                .thenAnswer(invocation -> {
+                    RowMapper<Content> mapper = invocation.getArgument(1);
+                    return List.of(mapper.mapRow(rs, 0));
+                });
+
+        EgovHybridContentRetriever retriever =
+                new EgovHybridContentRetriever(dense, jdbc, TABLE, 1.0, 1.0, 3);
+
+        List<Content> result = retriever.retrieve(Query.from("numeric"));
+
+        // dense("42") 와 lexical(doc_id="42") 이 동일 키로 합쳐져 단일 결과로 보강된다.
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).textSegment().metadata().getString("id")).isEqualTo("42");
     }
 }
