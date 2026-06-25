@@ -112,6 +112,18 @@ rag:
   # RAG 검색 결과 개수 (Top K)
   top-k: 3
 
+  # 하이브리드 검색(dense 벡터 + lexical pg_trgm, RRF 융합) 설정
+  retrieval:
+    hybrid:
+      # 활성화 여부. false(기본)이면 dense 단일 검색만 사용 (기존 동작 유지)
+      enabled: false
+      # 채널 가중치
+      weight:
+        dense: 1.0
+        lexical: 1.0
+      # 융합 결과 개수. 미설정 시 rag.top-k 값을 사용
+      top-k: 3
+
 # 채팅 메모리 설정
 chat:
   memory:

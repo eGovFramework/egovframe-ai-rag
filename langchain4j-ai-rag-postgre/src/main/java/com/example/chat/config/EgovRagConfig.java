@@ -6,9 +6,12 @@ import dev.langchain4j.rag.content.retriever.ContentRetriever;
 import dev.langchain4j.rag.content.retriever.EmbeddingStoreContentRetriever;
 import dev.langchain4j.store.embedding.EmbeddingStore;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
  * RAG 설정 클래스
@@ -23,6 +26,18 @@ public class EgovRagConfig {
 
     @Value("${rag.similarity.threshold:0.20}")
     private double similarityThreshold;
+
+    @Value("${pgvector.table-name:document_embeddings}")
+    private String tableName;
+
+    @Value("${rag.retrieval.hybrid.weight.dense:1.0}")
+    private double hybridDenseWeight;
+
+    @Value("${rag.retrieval.hybrid.weight.lexical:1.0}")
+    private double hybridLexicalWeight;
+
+    @Value("${rag.retrieval.hybrid.top-k:#{null}}")
+    private Integer hybridTopK;
 
     /**
      * ContentRetriever 빈 생성
@@ -45,5 +60,32 @@ public class EgovRagConfig {
                 .maxResults(topK)
                 .minScore(similarityThreshold)
                 .build();
+    }
+
+    /**
+     * 하이브리드 ContentRetriever 빈 생성
+     *
+     * <p>{@code rag.retrieval.hybrid.enabled=true} 일 때만 등록한다. off(기본) 상태에서는
+     * 빈이 만들어지지 않으므로 dense {@code contentRetriever} 빈만 존재하여 빈 모호성이
+     * 발생하지 않는다. dense 검색({@link #contentRetriever})과 lexical 검색(pg_trgm)을
+     * RRF로 융합한다.</p>
+     *
+     * @param denseContentRetriever dense 벡터 검색 빈
+     * @param jdbcTemplate          lexical 검색용 JdbcTemplate(자동 구성)
+     * @return 하이브리드 ContentRetriever
+     */
+    @Bean
+    @ConditionalOnProperty(prefix = "rag.retrieval.hybrid", name = "enabled", havingValue = "true")
+    public ContentRetriever hybridContentRetriever(
+            @Qualifier("contentRetriever") ContentRetriever denseContentRetriever,
+            JdbcTemplate jdbcTemplate) {
+
+        int effectiveTopK = (hybridTopK != null) ? hybridTopK : topK;
+        log.info("HybridContentRetriever 초기화 - topK: {}, weight(dense/lexical): {}/{}",
+                effectiveTopK, hybridDenseWeight, hybridLexicalWeight);
+
+        return new EgovHybridContentRetriever(
+                denseContentRetriever, jdbcTemplate, tableName,
+                hybridDenseWeight, hybridLexicalWeight, effectiveTopK);
     }
 }
