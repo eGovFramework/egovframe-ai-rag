@@ -37,7 +37,7 @@ class Langchain4jRagApplicationTests {
     @TestConfiguration
     static class TestConfig {
         @Bean
-        public static BeanFactoryPostProcessor removeRealConfig() {
+        static BeanFactoryPostProcessor removeRealConfig() {
             return (ConfigurableListableBeanFactory beanFactory) -> {
                 if (beanFactory instanceof BeanDefinitionRegistry registry) {
                     for (String name : beanFactory.getBeanNamesForType(EgovLangChain4jConfig.class, false, false)) {

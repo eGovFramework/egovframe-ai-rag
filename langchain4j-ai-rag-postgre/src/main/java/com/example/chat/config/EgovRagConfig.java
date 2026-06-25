@@ -33,7 +33,7 @@ public class EgovRagConfig {
      * @return ContentRetriever
      */
     @Bean
-    public ContentRetriever contentRetriever(
+    ContentRetriever contentRetriever(
             EmbeddingStore<TextSegment> embeddingStore,
             EmbeddingModel embeddingModel) {
 

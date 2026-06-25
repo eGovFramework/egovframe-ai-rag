@@ -14,7 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 public class EgovRedisConfig {
 
     @Bean
-    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
+    RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
         log.info("RedisTemplate 구성");
         
         RedisTemplate<String, Object> template = new RedisTemplate<>();

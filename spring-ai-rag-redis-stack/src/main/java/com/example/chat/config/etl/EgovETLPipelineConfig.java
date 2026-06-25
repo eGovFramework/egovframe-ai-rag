@@ -20,43 +20,43 @@ import lombok.extern.slf4j.Slf4j;
 public class EgovETLPipelineConfig {
 
     @Bean
-    public EgovMarkdownReader markdownReader() {
+    EgovMarkdownReader markdownReader() {
         log.info("EgovMarkdownReader 빈 생성");
         return new EgovMarkdownReader();
     }
 
     @Bean
-    public EgovPdfReader pdfReader() {
+    EgovPdfReader pdfReader() {
         log.info("EgovPdfReader 빈 생성");
         return new EgovPdfReader();
     }
 
     @Bean
-    public EgovHwpReader hwpReader() {
+    EgovHwpReader hwpReader() {
         log.info("EgovHwpReader 빈 생성");
         return new EgovHwpReader();
     }
 
     @Bean
-    public EgovHwpxReader hwpxReader() {
+    EgovHwpxReader hwpxReader() {
         log.info("EgovHwpxReader 빈 생성");
         return new EgovHwpxReader();
     }
 
     @Bean
-    public EgovContentFormatTransformer egovContentFormatTransformer() {
+    EgovContentFormatTransformer egovContentFormatTransformer() {
         log.info("EgovContentFormatTransformer 빈 생성");
         return new EgovContentFormatTransformer();
     }
 
     @Bean
-    public EgovEnhancedDocumentTransformer egovEnhancedDocumentTransformer(OllamaChatModel ollamaChatModel) {
+    EgovEnhancedDocumentTransformer egovEnhancedDocumentTransformer(OllamaChatModel ollamaChatModel) {
         log.info("EgovEnhancedDocumentTransformer 빈 생성");
         return new EgovEnhancedDocumentTransformer(ollamaChatModel);
     }
 
     @Bean
-    public EgovVectorStoreWriter vectorStoreWriter(RedisVectorStore redisVectorStore) {
+    EgovVectorStoreWriter vectorStoreWriter(RedisVectorStore redisVectorStore) {
         log.info("VectorStore DocumentWriter 빈 생성");
         return new EgovVectorStoreWriter(redisVectorStore);
     }
