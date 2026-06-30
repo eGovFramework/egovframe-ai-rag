@@ -47,7 +47,7 @@ public class EgovChatServiceImpl extends EgovAbstractServiceImpl implements Egov
                     .doOnError(e -> log.error("RAG 스트리밍 오류 - 세션: {}", sessionId, e))
                     .onErrorResume(e -> {
                         log.warn("RAG 스트리밍 폴백 반환 - 세션: {}", sessionId);
-                        return Flux.just(fallbackHandler.getFallbackMessage((Exception) e));
+                        return Flux.just(fallbackHandler.getFallbackMessage(e));
                     });
 
         } catch (Exception e) {
@@ -75,7 +75,7 @@ public class EgovChatServiceImpl extends EgovAbstractServiceImpl implements Egov
                     .doOnError(e -> log.error("Simple 스트리밍 오류 - 세션: {}", sessionId, e))
                     .onErrorResume(e -> {
                         log.warn("Simple 스트리밍 폴백 반환 - 세션: {}", sessionId);
-                        return Flux.just(fallbackHandler.getFallbackMessage((Exception) e));
+                        return Flux.just(fallbackHandler.getFallbackMessage(e));
                     });
 
         } catch (Exception e) {
