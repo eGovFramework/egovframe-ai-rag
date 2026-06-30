@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.beans.factory.annotation.Value;
 
+import com.example.chat.config.etl.readers.EgovDocxReader;
 import com.example.chat.config.etl.readers.EgovHwpReader;
 import com.example.chat.config.etl.readers.EgovHwpxReader;
 import com.example.chat.config.etl.readers.EgovMarkdownReader;
@@ -46,6 +47,7 @@ public class EgovDocumentServiceImpl extends EgovAbstractServiceImpl implements 
 
     // ETL 파이프라인 컴포넌트들
     private final EgovMarkdownReader egovMarkdownReader;
+    private final EgovDocxReader egovDocxReader;
     private final EgovPdfReader egovPdfReader;
     private final EgovHwpReader egovHwpReader;
     private final EgovHwpxReader egovHwpxReader;
@@ -100,22 +102,24 @@ public class EgovDocumentServiceImpl extends EgovAbstractServiceImpl implements 
 
         return CompletableFuture.supplyAsync(() -> {
             try {
-                // 1단계: 마크다운, PDF, HWP, HWPX 문서 읽기
+                // 1단계: 마크다운, DOCX, PDF, HWP, HWPX 문서 읽기
                 List<Document> markdownDocuments = egovMarkdownReader.get();
+                List<Document> docxDocuments = egovDocxReader.get();
                 List<Document> pdfDocuments = egovPdfReader.get();
                 List<Document> hwpDocuments = egovHwpReader.get();
                 List<Document> hwpxDocuments = egovHwpxReader.get();
 
                 List<Document> allDocuments = new ArrayList<>();
                 allDocuments.addAll(markdownDocuments);
+                allDocuments.addAll(docxDocuments);
                 allDocuments.addAll(pdfDocuments);
                 allDocuments.addAll(hwpDocuments);
                 allDocuments.addAll(hwpxDocuments);
 
                 totalCount.set(allDocuments.size());
-                log.info("총 {}개의 문서를 로드했습니다. (마크다운: {}개, PDF: {}개, HWP: {}개, HWPX: {}개)",
-                        allDocuments.size(), markdownDocuments.size(), pdfDocuments.size(),
-                        hwpDocuments.size(), hwpxDocuments.size());
+                log.info("총 {}개의 문서를 로드했습니다. (마크다운: {}개, DOCX: {}개, PDF: {}개, HWP: {}개, HWPX: {}개)",
+                        allDocuments.size(), markdownDocuments.size(), docxDocuments.size(),
+                        pdfDocuments.size(), hwpDocuments.size(), hwpxDocuments.size());
 
                 // 2단계: 변경된 문서 필터링
                 List<Document> changedDocuments = filterChangedDocuments(allDocuments);
