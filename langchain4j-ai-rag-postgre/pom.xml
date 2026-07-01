@@ -117,6 +117,19 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- Testcontainers: 하이브리드 lexical 검색(pg_trgm word_similarity) 실 DB 통합 테스트용.
+             Docker 미가용 환경에서는 @Testcontainers(disabledWithoutDocker=true)로 자동 skip. -->
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+
         <!-- Spring Boot Web -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
