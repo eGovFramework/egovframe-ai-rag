@@ -1,6 +1,7 @@
 package com.example.chat.service.impl;
 
 import com.example.chat.context.SessionContext;
+import com.example.chat.service.EgovAiFallbackHandler;
 import com.example.chat.service.EgovChatService;
 import com.example.chat.service.ChatbotFactory;
 import com.example.chat.service.RagChatbot;
@@ -23,6 +24,7 @@ import reactor.core.publisher.Flux;
 public class EgovChatServiceImpl extends EgovAbstractServiceImpl implements EgovChatService {
 
     private final ChatbotFactory chatbotFactory;
+    private final EgovAiFallbackHandler fallbackHandler;
 
     /**
      * 세션별 RAG 기반 스트리밍 응답 생성
@@ -42,11 +44,15 @@ public class EgovChatServiceImpl extends EgovAbstractServiceImpl implements Egov
             RagChatbot ragChatbot = chatbotFactory.createRagChatbot(model, sessionId);
             return ragChatbot.streamChat(query)
                     .doOnComplete(() -> log.info("RAG 스트리밍 완료 - 세션: {}", sessionId))
-                    .doOnError(e -> log.error("RAG 스트리밍 오류 - 세션: {}", sessionId, e));
+                    .doOnError(e -> log.error("RAG 스트리밍 오류 - 세션: {}", sessionId, e))
+                    .onErrorResume(e -> {
+                        log.warn("RAG 스트리밍 폴백 반환 - 세션: {}", sessionId);
+                        return Flux.just(fallbackHandler.getFallbackMessage(e));
+                    });
 
         } catch (Exception e) {
             log.error("RAG 스트리밍 응답 생성 중 오류 - 세션: {}", sessionId, e);
-            return Flux.error(e);
+            return Flux.just(fallbackHandler.getFallbackMessage(e));
         }
     }
 
@@ -66,45 +72,15 @@ public class EgovChatServiceImpl extends EgovAbstractServiceImpl implements Egov
             SimpleChatbot simpleChatbot = chatbotFactory.createSimpleChatbot(model, sessionId);
             return simpleChatbot.streamChat(query)
                     .doOnComplete(() -> log.info("Simple 스트리밍 완료 - 세션: {}", sessionId))
-                    .doOnError(e -> log.error("Simple 스트리밍 오류 - 세션: {}", sessionId, e));
+                    .doOnError(e -> log.error("Simple 스트리밍 오류 - 세션: {}", sessionId, e))
+                    .onErrorResume(e -> {
+                        log.warn("Simple 스트리밍 폴백 반환 - 세션: {}", sessionId);
+                        return Flux.just(fallbackHandler.getFallbackMessage(e));
+                    });
 
         } catch (Exception e) {
             log.error("Simple 스트리밍 응답 생성 중 오류 - 세션: {}", sessionId, e);
-            return Flux.error(e);
-        }
-    }
-
-    /**
-     * RAG 응답 생성 (비스트리밍)
-     */
-    public String generateRagResponse(String query) {
-        String sessionId = SessionContext.getCurrentSessionId();
-        log.info("RAG 응답 생성 (비스트리밍) - 세션: {}, 쿼리: {}", sessionId, query);
-
-        try {
-            RagChatbot ragChatbot = chatbotFactory.createRagChatbot(null, sessionId);
-            return ragChatbot.chat(query);
-
-        } catch (Exception e) {
-            log.error("RAG 응답 생성 중 오류", e);
-            return handleException(e);
-        }
-    }
-
-    /**
-     * 일반 응답 생성 (비스트리밍)
-     */
-    public String generateSimpleResponse(String query) {
-        String sessionId = SessionContext.getCurrentSessionId();
-        log.info("Simple 응답 생성 (비스트리밍) - 세션: {}, 쿼리: {}", sessionId, query);
-
-        try {
-            SimpleChatbot simpleChatbot = chatbotFactory.createSimpleChatbot(null, sessionId);
-            return simpleChatbot.chat(query);
-
-        } catch (Exception e) {
-            log.error("Simple 응답 생성 중 오류", e);
-            return handleException(e);
+            return Flux.just(fallbackHandler.getFallbackMessage(e));
         }
     }
 
@@ -117,20 +93,4 @@ public class EgovChatServiceImpl extends EgovAbstractServiceImpl implements Egov
         }
     }
 
-    /**
-     * 예외 처리
-     */
-    private String handleException(Exception e) {
-        String errorMessage = e.getMessage();
-
-        if (errorMessage != null && (errorMessage.contains("timeout")
-                || errorMessage.contains("timed out")
-                || errorMessage.contains("connection")
-                || e instanceof java.net.SocketTimeoutException
-                || e instanceof java.util.concurrent.TimeoutException)) {
-            return "죄송합니다. 서버 응답 시간이 초과되었습니다. 잠시 후 다시 시도해주세요.";
-        }
-
-        return "죄송합니다. 응답을 생성하는 중에 오류가 발생했습니다: " + errorMessage;
-    }
 }
