@@ -68,7 +68,7 @@
 
 1. [Ollama](https://ollama.com/download) 설치 및 사용할 LLM 모델을 설치한다. Ollama 설치 및 ONNX 모델 익스포트 방법은 [루트 README](./README.md)의 `공통 사전 준비`, `폐쇄망에서의 Ollama`, `Onnx 모델 익스포트` 항목을 참고한다.
 2. 임베딩 모델 파일(`model.onnx`, `tokenizer.json`)은 jar(프로젝트) 외부 경로인 `${user.home}/spring-ai-Config/model` (예: 윈도우 `%USERPROFILE%\spring-ai-Config\model`, 리눅스/macOS `~/spring-ai-Config/model`) 디렉토리에 위치시켜야 한다. 다른 경로를 사용하려면 `EMBEDDING_MODEL_PATH`/`EMBEDDING_TOKENIZER_PATH` 환경변수로 전체 경로를 오버라이드할 수 있다 (자세한 설정은 `application.yml`의 `spring.ai.embedding.transformer.onnx.modelUri`/`tokenizer.uri` 참고).
-3. Redis Stack에 인덱싱 될 문서의 경로는 `application.yml`의 `spring.ai.document.path` 및 `spring.ai.document.pdf-path` 속성에 설정되어 있으므로 확인 후 환경에 맞추어 변경하도록 한다. HWP 파일을 인덱싱하려면 `spring.ai.document.hwp-path` 속성을 추가한다 (예: `file:C:/workspace-test/upload/data/**/*.hwp`). 해당 속성이 없으면 HWP 처리를 건너뛴다.
+3. Redis Stack에 인덱싱 될 문서의 경로는 `application.yml`의 `spring.ai.document.path` 및 `spring.ai.document.pdf-path` 속성에 설정되어 있으므로 확인 후 환경에 맞추어 변경하도록 한다. HWP 파일을 인덱싱하려면 `spring.ai.document.hwp-path` 속성을 추가한다 (예: `file:C:/workspace-test/upload/data/**/*.hwp`). Excel 파일을 인덱싱하려면 `spring.ai.document.xlsx-path` 속성을 추가한다 (예: `file:C:/workspace-test/upload/data/**/*.xlsx`). 해당 속성이 없으면 각 처리를 건너뛴다.
 4. `docker-compose.yml` 을 사용해 `docker compose up -d`로 docker container 기반의 Redis 설정을 해 둔다. Redis Insight의 기본 포트는 `8001`이다.
 
 ## Spring AI ONNX 모델 주의사항
@@ -214,10 +214,10 @@ Flux<ChatResponse> 스트리밍 응답
 
 ## 문서 인덱싱
 
-- 현재 인덱싱 가능한 문서의 종류는 마크다운, PDF, HWP, HWPX 파일로 구성되어 있다.
-- `application.yml` 의 `spring.ai.document.path`, `spring.ai.document.pdf-path`, `spring.ai.document.hwp-path`, `spring.ai.document.hwpx-path` 에서 확인 가능하다. 경로 속성이 없으면 해당 형식의 처리를 건너뛴다.
+- 현재 인덱싱 가능한 문서의 종류는 마크다운, DOCX, PDF, HWP, HWPX, Excel(.xlsx) 파일이다.
+- `application.yml` 의 `spring.ai.document.path`, `spring.ai.document.pdf-path`, `spring.ai.document.hwp-path`, `spring.ai.document.hwpx-path`, `spring.ai.document.xlsx-path` 에서 확인 가능하다. 경로 속성이 없으면 해당 형식의 처리를 건너뛴다.
 
-### HWP / HWPX 문서 활성화
+### HWP / HWPX / Excel 문서 활성화
 
 `application.yml`의 `hwp-path`, `hwpx-path` 항목은 기본적으로 주석 처리되어 있다. 해당 형식 파일을 인덱싱하려면 주석을 해제하고 경로를 설정한다.
 
@@ -229,6 +229,8 @@ spring:
       hwp-path: file:C:/workspace-test/upload/data/**/*.hwp
       # hwpx-path 주석 해제 후 실제 경로로 변경
       hwpx-path: file:C:/workspace-test/upload/data/**/*.hwpx
+      # xlsx-path는 기본 활성화 — 필요시 경로 변경
+      xlsx-path: file:C:/workspace-test/upload/data/**/*.xlsx
 ```
 
 경로를 설정하지 않으면 해당 리더는 건너뛰며, 다른 형식의 문서 처리에는 영향을 주지 않는다.
@@ -295,7 +297,8 @@ spring-ai-rag-redis-stack/
 │   │   │   │   ├── EgovMarkdownReader.java         # 마크다운 리더
 │   │   │   │   ├── EgovPdfReader.java              # PDF 리더
 │   │   │   │   ├── EgovHwpReader.java              # HWP 리더
-│   │   │   │   └── EgovHwpxReader.java             # HWPX 리더
+│   │   │   │   ├── EgovHwpxReader.java             # HWPX 리더
+│   │   │   │   └── EgovExcelReader.java            # Excel(.xlsx) 리더
 │   │   │   ├── transformers/
 │   │   │   │   ├── EgovContentFormatTransformer.java    # 문서 정규화
 │   │   │   │   └── EgovEnhancedDocumentTransformer.java # 청킹, 메타데이터

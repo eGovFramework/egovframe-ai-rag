@@ -88,10 +88,16 @@
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-markdown-document-reader</artifactId>
         </dependency>
-        <!-- MS Word(.docx) 문서 파싱 (POI는 egovframe-rte-fdl-excel 전이 의존성으로 제공) -->
+        <!-- DOCX·Excel(.xlsx) 문서 파싱 (POI는 egovframe-rte-fdl-excel 전이 의존성으로 제공) -->
         <dependency>
             <groupId>org.egovframe.rte</groupId>
             <artifactId>egovframe-rte-fdl-excel</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.commons</groupId>
+                    <artifactId>commons-lang3</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
