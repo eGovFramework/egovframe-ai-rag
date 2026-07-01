@@ -7,8 +7,10 @@ import dev.langchain4j.rag.content.retriever.ContentRetriever;
 import dev.langchain4j.rag.query.Query;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.transaction.PlatformTransactionManager;
 
 import java.sql.ResultSet;
 import java.util.List;
@@ -17,7 +19,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -29,6 +33,17 @@ import static org.mockito.Mockito.when;
 class EgovHybridContentRetrieverTest {
 
     private static final String TABLE = "document_embeddings";
+
+    // lexical word_similarity 임계값 테스트값(프로덕션 기본 0.30과 무관하게 융합 로직만 검증).
+    private static final double LEXICAL_THRESHOLD = 0.30;
+
+    /**
+     * 통과용 트랜잭션 매니저. mock 이므로 getTransaction 은 null 을 반환하고 commit 은 no-op 이라
+     * {@code transactionTemplate.execute(...)} 콜백이 그대로 실행된다(실제 DB·트랜잭션 없음).
+     */
+    private PlatformTransactionManager passthroughTxManager() {
+        return mock(PlatformTransactionManager.class);
+    }
 
     private Content content(String id, String text) {
         Metadata metadata = new Metadata();
@@ -64,7 +79,7 @@ class EgovHybridContentRetrieverTest {
                 content("L1", "lexical only one")));
 
         EgovHybridContentRetriever retriever =
-                new EgovHybridContentRetriever(dense, jdbc, TABLE, 1.0, 1.0, 3);
+                new EgovHybridContentRetriever(dense, jdbc, passthroughTxManager(), TABLE, 1.0, 1.0, LEXICAL_THRESHOLD, 3);
 
         List<Content> result = retriever.retrieve(Query.from("shared"));
 
@@ -89,7 +104,7 @@ class EgovHybridContentRetrieverTest {
                 .thenThrow(new RuntimeException("relation does not exist"));
 
         EgovHybridContentRetriever retriever =
-                new EgovHybridContentRetriever(dense, jdbc, TABLE, 1.0, 1.0, 3);
+                new EgovHybridContentRetriever(dense, jdbc, passthroughTxManager(), TABLE, 1.0, 1.0, LEXICAL_THRESHOLD, 3);
 
         List<Content> result = retriever.retrieve(Query.from("alpha"));
 
@@ -109,7 +124,7 @@ class EgovHybridContentRetrieverTest {
 
         // lexical 가중 3배 -> LEX_TOP(3/60) > DENSE_TOP(1/60)
         EgovHybridContentRetriever retriever =
-                new EgovHybridContentRetriever(dense, jdbc, TABLE, 1.0, 3.0, 3);
+                new EgovHybridContentRetriever(dense, jdbc, passthroughTxManager(), TABLE, 1.0, 3.0, LEXICAL_THRESHOLD, 3);
 
         List<Content> result = retriever.retrieve(Query.from("top"));
 
@@ -129,7 +144,7 @@ class EgovHybridContentRetrieverTest {
                 content(null, "same text body")));
 
         EgovHybridContentRetriever retriever =
-                new EgovHybridContentRetriever(dense, jdbc, TABLE, 1.0, 1.0, 3);
+                new EgovHybridContentRetriever(dense, jdbc, passthroughTxManager(), TABLE, 1.0, 1.0, LEXICAL_THRESHOLD, 3);
 
         List<Content> result = retriever.retrieve(Query.from("same"));
 
@@ -154,7 +169,7 @@ class EgovHybridContentRetrieverTest {
                 content("SAME", "shared body")));
 
         EgovHybridContentRetriever retriever =
-                new EgovHybridContentRetriever(dense, jdbc, TABLE, 1.0, 1.0, 3);
+                new EgovHybridContentRetriever(dense, jdbc, passthroughTxManager(), TABLE, 1.0, 1.0, LEXICAL_THRESHOLD, 3);
 
         List<Content> result = retriever.retrieve(Query.from("shared"));
 
@@ -187,12 +202,42 @@ class EgovHybridContentRetrieverTest {
                 });
 
         EgovHybridContentRetriever retriever =
-                new EgovHybridContentRetriever(dense, jdbc, TABLE, 1.0, 1.0, 3);
+                new EgovHybridContentRetriever(dense, jdbc, passthroughTxManager(), TABLE, 1.0, 1.0, LEXICAL_THRESHOLD, 3);
 
         List<Content> result = retriever.retrieve(Query.from("numeric"));
 
         // dense("42") 와 lexical(doc_id="42") 이 동일 키로 합쳐져 단일 결과로 보강된다.
         assertThat(result).hasSize(1);
         assertThat(result.get(0).textSegment().metadata().getString("id")).isEqualTo("42");
+    }
+
+    @Test
+    @DisplayName("lexical SQL은 word_similarity(%>) 연산자를 올바른 인자 방향으로 사용하고 임계값을 트랜잭션 스코프로 설정한다")
+    void lexicalSqlUsesWordSimilarityOperatorInCorrectDirection() {
+        ContentRetriever dense = mock(ContentRetriever.class);
+        JdbcTemplate jdbc = mock(JdbcTemplate.class);
+        when(dense.retrieve(any(Query.class))).thenReturn(List.of(content("D1", "dense body")));
+        stubLexical(jdbc, List.of(content("L1", "lexical body")));
+
+        EgovHybridContentRetriever retriever =
+                new EgovHybridContentRetriever(dense, jdbc, passthroughTxManager(), TABLE, 1.0, 1.0, LEXICAL_THRESHOLD, 3);
+        retriever.retrieve(Query.from("리액티브 레디스"));
+
+        // 1) 게이트 쿼리: %> 연산자 + word_similarity(?, text) 방향(대칭 similarity/% 아님) + LIMIT 바인드 순서.
+        ArgumentCaptor<String> sql = ArgumentCaptor.forClass(String.class);
+        verify(jdbc).query(sql.capture(), any(RowMapper.class),
+                eq("리액티브 레디스"), eq("리액티브 레디스"), eq(3));
+        assertThat(sql.getValue())
+                .contains(" %> ?")
+                .contains("word_similarity(?, text)")
+                .doesNotContain("similarity(text,"); // 대칭 similarity 회귀 방지
+
+        // 2) 임계값은 word_similarity_threshold GUC를 트랜잭션 스코프(is_local=true)로 설정.
+        //    set_config는 값을 반환하는 SELECT이므로 queryForObject로 실행한다(update 아님).
+        ArgumentCaptor<String> setSql = ArgumentCaptor.forClass(String.class);
+        verify(jdbc).queryForObject(setSql.capture(), eq(String.class), eq(Double.toString(LEXICAL_THRESHOLD)));
+        assertThat(setSql.getValue())
+                .contains("pg_trgm.word_similarity_threshold")
+                .contains("true"); // is_local
     }
 }

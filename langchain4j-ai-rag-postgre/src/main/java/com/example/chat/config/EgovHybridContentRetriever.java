@@ -8,6 +8,8 @@ import dev.langchain4j.rag.content.retriever.ContentRetriever;
 import dev.langchain4j.rag.query.Query;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -39,22 +41,28 @@ public class EgovHybridContentRetriever implements ContentRetriever {
 
     private final ContentRetriever denseRetriever;
     private final JdbcTemplate jdbcTemplate;
+    private final TransactionTemplate transactionTemplate;
     private final String tableName;
     private final double denseWeight;
     private final double lexicalWeight;
+    private final double lexicalWordSimilarityThreshold;
     private final int topK;
 
     public EgovHybridContentRetriever(ContentRetriever denseRetriever,
                                       JdbcTemplate jdbcTemplate,
+                                      PlatformTransactionManager transactionManager,
                                       String tableName,
                                       double denseWeight,
                                       double lexicalWeight,
+                                      double lexicalWordSimilarityThreshold,
                                       int topK) {
         this.denseRetriever = denseRetriever;
         this.jdbcTemplate = jdbcTemplate;
+        this.transactionTemplate = new TransactionTemplate(transactionManager);
         this.tableName = tableName;
         this.denseWeight = denseWeight;
         this.lexicalWeight = lexicalWeight;
+        this.lexicalWordSimilarityThreshold = lexicalWordSimilarityThreshold;
         this.topK = topK;
     }
 
@@ -95,8 +103,17 @@ public class EgovHybridContentRetriever implements ContentRetriever {
     }
 
     /**
-     * pg_trgm 유사도 기반 lexical 검색.
-     * {@code text % ?} 연산자로 후보를 거른 뒤 similarity 내림차순으로 정렬한다.
+     * pg_trgm word_similarity 기반 lexical 검색.
+     * {@code text %> ?} 연산자로 후보를 거른 뒤 word_similarity 내림차순으로 정렬한다.
+     *
+     * <p><b>연산자 선택 근거</b> — 대칭 similarity({@code %})는 문서(청크)가 길수록 trigram
+     * Jaccard 분모가 커져 값이 붕괴한다. 앱 기본 청크 크기(4000자, {@code DocumentSplitters.recursive})로
+     * 색인한 실제 한국어 문서에서 정답 청크의 {@code similarity}는 0.006~0.058(전부 0.06 미만)로,
+     * 어떤 실용 임계값에서도 lexical 채널이 무력화된다. 반면 {@code word_similarity}는 질의를
+     * 문서의 "가장 잘 맞는 연속 구간"과 비교하므로 청크 길이에 강건하다(동일 코퍼스에서 정답
+     * 청크 word_similarity 0.17~1.0). {@code %>}는 {@code text} 컬럼의 GIN trigram 인덱스를
+     * 그대로 사용한다(Bitmap Index Scan). {@code text %> ?}는 {@code word_similarity(?, text) >=
+     * pg_trgm.word_similarity_threshold}와 동치다.</p>
      */
     private List<Content> lexicalSearch(String queryText) {
         // id는 SQL단에서 metadata::jsonb ->> 'id'로 추출한다. 이렇게 하면 dense 채널의
@@ -105,16 +122,30 @@ public class EgovHybridContentRetriever implements ContentRetriever {
         // 안전하게 동작한다.
         String sql = "SELECT " + TEXT_COLUMN + ", metadata::jsonb ->> 'id' AS " + DOC_ID_COLUMN
                 + " FROM " + tableName
-                + " WHERE " + TEXT_COLUMN + " % ? ORDER BY similarity(" + TEXT_COLUMN + ", ?) DESC LIMIT ?";
+                + " WHERE " + TEXT_COLUMN + " %> ? ORDER BY word_similarity(?, " + TEXT_COLUMN + ") DESC LIMIT ?";
 
-        return jdbcTemplate.query(sql, (rs, rowNum) -> {
-            String text = rs.getString(TEXT_COLUMN);
-            String docId = rs.getString(DOC_ID_COLUMN);
-            return toContent(text, docId);
-        }, queryText, queryText, topK);
+        // word_similarity 임계값을 트랜잭션 스코프(is_local=true)로만 적용한다. 트랜잭션
+        // 커밋/롤백 시 값이 자동 복귀하므로 커넥션 풀에 임계값이 누수되지 않고, %>(GIN trigram
+        // 인덱스) 경로도 유지된다. 코퍼스 언어·문서 특성에 맞춰 프로퍼티로 조정한다.
+        return transactionTemplate.execute(status -> {
+            // set_config는 값을 반환하는 SELECT이므로 queryForObject로 실행한다(update의 executeUpdate는
+            // 행을 반환하는 문에서 예외). 반환값은 사용하지 않는다.
+            jdbcTemplate.queryForObject("SELECT set_config('pg_trgm.word_similarity_threshold', ?, true)",
+                    String.class, Double.toString(lexicalWordSimilarityThreshold));
+            return jdbcTemplate.query(sql, (rs, rowNum) -> {
+                String text = rs.getString(TEXT_COLUMN);
+                String docId = rs.getString(DOC_ID_COLUMN);
+                return toContent(text, docId);
+            }, queryText, queryText, topK);
+        });
     }
 
-    /** lexical 결과 행을 Content로 변환한다. SQL로 추출한 id만 보존한다. */
+    /**
+     * lexical 결과 행을 Content로 변환한다. 융합 키로 쓰는 {@code id}만 보존하고 파일명·소스
+     * 경로 등 나머지 메타데이터는 담지 않는다(의도된 설계). 양 채널에 모두 등장한 문서는 dense
+     * 채널의 완전한 Content가 융합 대표로 유지되고(먼저 등록되어 우선), lexical 단독 문서는
+     * id·text만 컨텍스트에 포함된다 — 본문 자체는 보존되므로 답변 생성에는 지장이 없다.
+     */
     private Content toContent(String text, String docId) {
         Metadata metadata = new Metadata();
         if (docId != null && !docId.isBlank()) {
