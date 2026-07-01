@@ -26,7 +26,7 @@ public final class EgovLexicalQueryBuilder {
     /** RediSearch 질의 구문에서 의미를 갖는 특수문자(이스케이프 대상). */
     private static final String SPECIAL_CHARS = ",.<>{}[]\"':;!@#$%^&*()-+=~|/\\ ";
 
-    /** 단일 어절로 인정할 최소 길이(1글자 노이즈 토큰 억제). */
+    /** 어절로 인정할 최소 길이. 값 1은 빈 문자열(0글자)만 제외하고 1글자 이상을 허용한다. */
     private static final int MIN_TERM_LENGTH = 1;
 
     private EgovLexicalQueryBuilder() {

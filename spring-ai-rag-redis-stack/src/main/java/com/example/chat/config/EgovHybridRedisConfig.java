@@ -36,7 +36,7 @@ public class EgovHybridRedisConfig {
     @Value("${spring.data.redis.port:6379}")
     private int redisPort;
 
-    @Value("${spring.ai.vectorstore.redis.index-name:spring-ai-index}")
+    @Value("${spring.ai.vectorstore.redis.index-name:document-index}")
     private String indexName;
 
     @Value("${rag.top-k:3}")

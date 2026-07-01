@@ -132,6 +132,7 @@ public class EgovHybridDocumentRetriever implements DocumentRetriever {
         // 가중치로만 반영된다(본문 중복 적재·차원 불일치 우회 - 확정 설계).
         List<Document> result = new ArrayList<>(fusedKeys.size());
         for (String key : fusedKeys) {
+            // byKey에는 dense 결과만 담겨 있으므로, lexical 단독 키는 여기서 null이 되어 조용히 제외된다(위 주석 참조).
             Document doc = byKey.get(key);
             if (doc != null) {
                 result.add(doc);
