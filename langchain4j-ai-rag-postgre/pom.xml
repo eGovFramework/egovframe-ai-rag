@@ -85,7 +85,7 @@
             <artifactId>langchain4j-document-parser-apache-pdfbox</artifactId>
         </dependency>
 
-        <!-- eGovFrame Excel (POI OOXML 전이 의존성 — DOCX 파싱) -->
+        <!-- eGovFrame Excel (POI OOXML 전이 의존성 — DOCX·xlsx 파싱) -->
         <dependency>
             <groupId>org.egovframe.rte</groupId>
             <artifactId>egovframe-rte-fdl-excel</artifactId>

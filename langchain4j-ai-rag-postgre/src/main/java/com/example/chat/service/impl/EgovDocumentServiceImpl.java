@@ -1,6 +1,7 @@
 package com.example.chat.service.impl;
 
 import com.example.chat.config.etl.readers.EgovDocxReader;
+import com.example.chat.config.etl.readers.EgovExcelReader;
 import com.example.chat.config.etl.readers.EgovHwpReader;
 import com.example.chat.config.etl.readers.EgovHwpxReader;
 import com.example.chat.config.etl.readers.EgovMarkdownReader;
@@ -43,6 +44,7 @@ public class EgovDocumentServiceImpl extends EgovAbstractServiceImpl implements 
     private final EgovMarkdownReader egovMarkdownReader;
     private final EgovPdfReader egovPdfReader;
     private final EgovDocxReader egovDocxReader;
+    private final EgovExcelReader egovExcelReader;
     private final EgovHwpReader egovHwpReader;
     private final EgovHwpxReader egovHwpxReader;
     private final EgovContentFormatTransformer egovContentFormatTransformer;
@@ -96,10 +98,11 @@ public class EgovDocumentServiceImpl extends EgovAbstractServiceImpl implements 
 
         return CompletableFuture.supplyAsync(() -> {
             try {
-                // 1단계: 마크다운, PDF, DOCX, HWP, HWPX 문서 읽기
+                // 1단계: 마크다운, PDF, DOCX, Excel(xlsx), HWP, HWPX 문서 읽기
                 List<Document> markdownDocuments = egovMarkdownReader.read();
                 List<Document> pdfDocuments = egovPdfReader.read();
                 List<Document> docxDocuments = egovDocxReader.read();
+                List<Document> excelDocuments = egovExcelReader.read();
                 List<Document> hwpDocuments = egovHwpReader.read();
                 List<Document> hwpxDocuments = egovHwpxReader.read();
 
@@ -107,12 +110,14 @@ public class EgovDocumentServiceImpl extends EgovAbstractServiceImpl implements 
                 allDocuments.addAll(markdownDocuments);
                 allDocuments.addAll(pdfDocuments);
                 allDocuments.addAll(docxDocuments);
+                allDocuments.addAll(excelDocuments);
                 allDocuments.addAll(hwpDocuments);
                 allDocuments.addAll(hwpxDocuments);
 
                 totalCount.set(allDocuments.size());
-                log.info("총 {}개의 문서를 로드했습니다. (마크다운: {}개, PDF: {}개, DOCX: {}개, HWP: {}개, HWPX: {}개)",
-                        allDocuments.size(), markdownDocuments.size(), pdfDocuments.size(), docxDocuments.size(), hwpDocuments.size(), hwpxDocuments.size());
+                log.info("총 {}개의 문서를 로드했습니다. (마크다운: {}개, PDF: {}개, DOCX: {}개, Excel: {}개, HWP: {}개, HWPX: {}개)",
+                        allDocuments.size(), markdownDocuments.size(), pdfDocuments.size(),
+                        docxDocuments.size(), excelDocuments.size(), hwpDocuments.size(), hwpxDocuments.size());
 
                 // 2단계: 변경된 문서 필터링
                 List<Document> changedDocuments = filterChangedDocuments(allDocuments);
