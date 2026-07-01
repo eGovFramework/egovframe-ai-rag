@@ -88,7 +88,7 @@
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-markdown-document-reader</artifactId>
         </dependency>
-        <!-- Excel(.xlsx) 문서 파싱 (POI는 egovframe-rte-fdl-excel 전이 의존성으로 제공) -->
+        <!-- DOCX·Excel(.xlsx) 문서 파싱 (POI는 egovframe-rte-fdl-excel 전이 의존성으로 제공) -->
         <dependency>
             <groupId>org.egovframe.rte</groupId>
             <artifactId>egovframe-rte-fdl-excel</artifactId>
@@ -140,6 +140,12 @@
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <optional>true</optional>
+        </dependency>
+        <!-- HWPX 문서 파싱 (한글 .hwpx 형식, Apache-2.0) -->
+        <dependency>
+            <groupId>kr.dogfoot</groupId>
+            <artifactId>hwpxlib</artifactId>
+            <version>1.0.8</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

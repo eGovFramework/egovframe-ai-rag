@@ -104,9 +104,11 @@ public class EgovPdfReader implements DocumentReader {
             Document document = documents.get(i);
             String content = document.getText();
             
-            // 빈 페이지 체크 (로깅만)
+            // 빈(공백뿐인) 페이지는 건너뛴다. 내용 없는 페이지를 그대로 변환하면
+            // 임베딩·벡터스토어에 무의미한 빈 문서가 색인되어 검색 품질을 떨어뜨린다.
             if (content == null || content.trim().isEmpty()) {
-                log.debug("PDF 페이지 {}: 빈 내용 (길이: 0)", i + 1);
+                log.debug("PDF 페이지 {}: 빈 내용으로 건너뜀", i + 1);
+                continue;
             } else if (content.trim().length() < 10) {
                 log.debug("PDF 페이지 {}: 매우 짧은 내용 (길이: {})", i + 1, content.trim().length());
             }

@@ -41,7 +41,9 @@ spring:
     document:
       path: file:C:/workspace-test/upload/data/**/*.md
       pdf-path: file:C:/workspace-test/upload/data/**/*.pdf
+      docx-path: file:C:/workspace-test/upload/data/**/*.docx
       # hwp-path: file:C:/workspace-test/upload/data/**/*.hwp
+      # hwpx-path: file:C:/workspace-test/upload/data/**/*.hwpx
       xlsx-path: file:C:/workspace-test/upload/data/**/*.xlsx
 
       # PDF 리더 설정
