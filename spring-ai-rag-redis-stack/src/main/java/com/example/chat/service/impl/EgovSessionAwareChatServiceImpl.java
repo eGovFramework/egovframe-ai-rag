@@ -13,9 +13,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.example.chat.context.SessionContext;
+import com.example.chat.config.EgovHybridDocumentRetriever;
 import com.example.chat.config.EgovRagConfig;
 import com.example.chat.config.rag.transformers.EgovCompressionQueryTransformer;
+import org.springframework.ai.rag.retrieval.search.DocumentRetriever;
 import org.springframework.ai.rag.retrieval.search.VectorStoreDocumentRetriever;
+import org.springframework.beans.factory.ObjectProvider;
 import com.example.chat.response.TechnologyResponse;
 import com.example.chat.service.EgovSessionAwareChatService;
 import com.example.chat.util.EgovThinkTagOutputConverter;
@@ -33,6 +36,11 @@ public class EgovSessionAwareChatServiceImpl extends EgovAbstractServiceImpl imp
     private final MessageChatMemoryAdvisor messageChatMemoryAdvisor;
     private final EgovCompressionQueryTransformer compressionTransformer;
     private final VectorStoreDocumentRetriever vectorStoreDocumentRetriever;
+    /**
+     * 하이브리드(dense+lexical RRF) DocumentRetriever. {@code rag.retrieval.hybrid.enabled=true}
+     * 일 때만 빈이 등록되므로 ObjectProvider로 선택적으로 주입한다. 없으면 dense로 폴백한다.
+     */
+    private final ObjectProvider<EgovHybridDocumentRetriever> hybridDocumentRetrieverProvider;
 
     @Value("${rag.enable-query-compression:true}")
     private boolean enableQueryCompression;
@@ -57,9 +65,11 @@ public class EgovSessionAwareChatServiceImpl extends EgovAbstractServiceImpl imp
             ChatClientRequestSpec requestSpec = createRequestSpec(query, model);
 
             // RAG 어드바이저 생성 (질문 압축 설정값에 따라 동작 결정)
+            // 하이브리드 빈이 등록되어 있으면(토글 on) 그것을, 없으면 dense를 사용한다.
+            DocumentRetriever activeRetriever = resolveDocumentRetriever();
             log.info("RAG 어드바이저 생성 시작 - 세션: {}, 원본 질문: '{}', 질문 압축: {}", sessionId, query, enableQueryCompression);
             Advisor ragAdvisor = EgovRagConfig.createRagAdvisor(sessionId, compressionTransformer,
-                    vectorStoreDocumentRetriever, enableQueryCompression);
+                    activeRetriever, enableQueryCompression);
             log.info("RAG 어드바이저 생성 완료 - 세션: {}", sessionId);
 
             log.info("RAG 스트리밍 시작 - 세션: {}, 원본 질문: '{}'", sessionId, query);
@@ -129,6 +139,24 @@ public class EgovSessionAwareChatServiceImpl extends EgovAbstractServiceImpl imp
             log.error("기술 정보 JSON 응답 생성 중 오류 발생", e);
             return new TechnologyResponse("알 수 없음", "알 수 없음", "오류가 발생했습니다", null, null);
         }
+    }
+
+    /**
+     * RAG 검색에 사용할 DocumentRetriever를 선택한다.
+     *
+     * <p>{@code rag.retrieval.hybrid.enabled=true}로 하이브리드 빈이 등록된 경우 이를
+     * 사용하고, 그렇지 않으면 dense {@link VectorStoreDocumentRetriever}로 폴백한다.
+     * 하이브리드 빈은 선택적으로 주입되므로 토글 off 시에도 기존 동작이 유지된다.</p>
+     *
+     * @return 활성 DocumentRetriever
+     */
+    private DocumentRetriever resolveDocumentRetriever() {
+        DocumentRetriever hybrid = hybridDocumentRetrieverProvider.getIfAvailable();
+        if (hybrid != null) {
+            log.debug("하이브리드 DocumentRetriever 사용 (dense+lexical RRF)");
+            return hybrid;
+        }
+        return vectorStoreDocumentRetriever;
     }
 
     /**

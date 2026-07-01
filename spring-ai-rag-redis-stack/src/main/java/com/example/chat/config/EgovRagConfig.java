@@ -60,7 +60,7 @@ public class EgovRagConfig {
      */
     public static Advisor createRagAdvisor(String sessionId,
                                          EgovCompressionQueryTransformer compressionTransformer,
-                                         VectorStoreDocumentRetriever documentRetriever,
+                                         DocumentRetriever documentRetriever,
                                          boolean enableQueryCompression) {
         log.info("RAG 어드바이저 생성 시작 - 세션: {}, 질문 압축: {}", sessionId, enableQueryCompression);
 
