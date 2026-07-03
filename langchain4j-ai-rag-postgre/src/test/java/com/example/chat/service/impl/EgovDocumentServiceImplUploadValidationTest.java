@@ -22,8 +22,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class EgovDocumentServiceImplUploadValidationTest {
 
+    // 검증 거부 분기만 대상으로 하므로 모든 협력 객체는 null로 둔다. 인자 수는
+    // EgovDocumentServiceImpl 생성자(리더 5 + 변환 2 + writer + repository + executor = 10)와 일치.
     private final EgovDocumentServiceImpl service =
-            new EgovDocumentServiceImpl(null, null, null, null, null, null, null);
+            new EgovDocumentServiceImpl(null, null, null, null, null, null, null, null, null, null);
 
     private MockMultipartFile md(String filename, int size) {
         return new MockMultipartFile("files", filename, "text/markdown", new byte[size]);
