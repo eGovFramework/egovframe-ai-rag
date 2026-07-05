@@ -48,4 +48,13 @@ class EgovMarkdownReaderMetadataTest {
         assertThat(metadata.getString("has_links")).isEqualTo("false");
         assertThat(metadata.getString("has_images")).isEqualTo("false");
     }
+
+    @Test
+    @DisplayName("파일명이 file_name 키로 기록된다(PDF·HWP 리더와 정합)")
+    void fileNameIsRecorded() throws Exception {
+        Metadata metadata = metadata("# 제목\n본문\n");
+
+        assertThat(metadata.getString("file_name")).isEqualTo("sample.md");
+        assertThat(metadata.getString("source")).isEqualTo("sample.md");
+    }
 }

@@ -340,6 +340,57 @@ pgvector:
   create-table: true
 ```
 
+### 하이브리드 검색 (dense 벡터 + lexical pg_trgm)
+
+의미 기반 dense 벡터 검색에 키워드 기반 lexical 검색(PostgreSQL `pg_trgm` 트라이그램 유사도)을
+더해 [RRF(Reciprocal Rank Fusion)](https://plg.uwaterloo.ca/~gvcormac/cormacksigir09-rrf.pdf)로
+융합한다. 정확한 용어·고유명사 질의에서 dense 채널이 놓치는 문서를 lexical 채널이 보완한다.
+기본값은 **off**이며, 켜면 dense 단일 검색은 그대로 두고 lexical 채널과 융합만 추가된다.
+
+```yaml
+rag:
+  retrieval:
+    hybrid:
+      enabled: true                 # 하이브리드 활성화 (기본 false)
+      weight:
+        dense: 1.0                  # dense 채널 RRF 가중치
+        lexical: 1.0                # lexical 채널 RRF 가중치
+      top-k: 3                          # 융합 결과 개수 (미설정 시 rag.top-k)
+      lexical:
+        word-similarity-threshold: 0.30 # lexical(pg_trgm word_similarity) 게이트
+```
+
+활성화 시 애플리케이션 기동 완료 시점에 `pg_trgm` 확장과 GIN 트라이그램 인덱스를 멱등으로
+생성한다(`EgovHybridIndexInitializer`). `docker-compose`의 `init-scripts/01-init-pgvector.sql`이
+컨테이너 초기화 때 `CREATE EXTENSION pg_trgm`을 미리 수행하므로, 애플리케이션 계정에 슈퍼유저
+권한을 부여할 필요가 없다.
+
+#### lexical 연산자와 임계값: `word_similarity`(`%>`) + 0.30
+
+lexical 채널은 대칭 `similarity`(`%`)가 아니라 **`word_similarity`(`%>`)** 를 사용한다.
+이 앱은 문서를 큰 청크(기본 4000자, `DocumentSplitters.recursive`)로 색인하는데, 대칭
+`similarity`는 문서가 길수록 트라이그램 Jaccard 분모가 커져 값이 붕괴한다. 실제 표준프레임워크
+한국어 문서(runtime README)를 색인한 코퍼스에서 정답 청크의 `similarity`는 **0.006~0.058**
+(전부 0.06 미만)로, 어떤 실용 임계값을 써도 관련 문서가 `%`를 통과하지 못했다.
+
+`word_similarity`는 질의를 문서의 **가장 잘 맞는 연속 구간**과 비교하므로 청크 길이에 강건하다.
+같은 코퍼스에서 정답 청크의 `word_similarity`는 **0.17~1.0**로 분포했고, `%>` 게이트 임계값별
+recall@3(topK=3)은 다음과 같았다.
+
+| word_similarity 임계값 | recall@3 | 비고 |
+|------------------------|----------|------|
+| 0.60 (pg_trgm 기본)    | 0.31     | 너무 엄격 |
+| 0.40                   | 0.57     | |
+| **0.30**               | **0.80** | 기본값(권장) |
+| 0.20                   | 0.84     | recall↑, 노이즈↑ |
+
+`%>` 연산자는 `text` 컬럼의 GIN 트라이그램 인덱스를 그대로 사용한다(별도 인덱스 불필요).
+임계값은 **트랜잭션 스코프**(`set_config('pg_trgm.word_similarity_threshold', …, is_local => true)`)로만
+적용해 `%>`(GIN 인덱스) 경로를 유지하면서 커넥션 풀에 값이 누수되지 않도록 한다. 기본값은
+runtime README 코퍼스 측정 기준 **0.30**이며, recall을 더 원하면 낮추고(노이즈 증가) 정밀도를
+원하면 높인다. 위 수치는 구성한 라벨 질의셋(문서 33·질의 35) 기준의 결정론적 측정값으로,
+절대 수치보다 방향(대칭 `%`는 큰 청크에서 무력, `%>`가 적합)이 핵심이다.
+
 ## 문제 해결
 
 ### Ollama 연결 실패

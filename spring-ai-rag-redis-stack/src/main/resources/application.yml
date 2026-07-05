@@ -121,6 +121,19 @@ rag:
   # RAG 검색 결과 개수 (Top K)
   top-k: 3
 
+  # 하이브리드 검색(dense 벡터 + lexical RediSearch FT.SEARCH) 설정
+  # enabled:true 일 때만 lexical 채널(JedisPooled)·하이브리드 retriever 빈이 등록된다.
+  # off(기본)에서는 기존 dense 단독 검색이 그대로 동작한다(빈 모호성 없음).
+  retrieval:
+    hybrid:
+      enabled: false
+      # RRF 채널 가중치(기본 1.0). lexical을 높이면 키워드 일치 문서가 상위로 올라온다.
+      weight:
+        dense: 1.0
+        lexical: 1.0
+      # 하이브리드 결과 개수. 미지정 시 rag.top-k 를 따른다.
+      # top-k: 3
+
 # 채팅 메모리 설정 (기본값: 20)
 chat:
   memory:

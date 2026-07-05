@@ -403,6 +403,37 @@ chat:
     max-messages: 20                  # 최대 메시지 수
 ```
 
+### 하이브리드 검색 (dense 벡터 + lexical RediSearch)
+
+의미 기반 dense 벡터 검색에 키워드 기반 lexical 검색(RediSearch `FT.SEARCH`)을 더해 [RRF(Reciprocal Rank Fusion)](https://plg.uwaterloo.ca/~gvcormac/cormacksigir09-rrf.pdf)로 융합한다. 정확한 용어·고유명사 질의에서 dense 채널이 놓치는 문서를 lexical 채널이 보완한다. 기본값은 off이며, 켜면 dense 단독 검색은 그대로 두고 lexical 채널과 융합만 추가된다.
+
+#### 활성화 방법
+
+```yaml
+rag:
+  retrieval:
+    hybrid:
+      enabled: true          # 하이브리드 활성화 (기본 false)
+      weight:
+        dense: 1.0           # dense 채널 RRF 가중치
+        lexical: 1.0         # lexical 채널 RRF 가중치
+      # top-k: 3             # 융합 결과 개수 (미지정 시 rag.top-k)
+```
+
+`enabled: true`일 때만 lexical 채널(`JedisPooled`)과 하이브리드 retriever 빈이 등록된다. off(기본)에서는 기존 dense 단독 검색이 그대로 동작하므로 빈 모호성이 발생하지 않는다.
+
+#### 동작 원리
+
+- **dense 채널**: 기존 `VectorStoreDocumentRetriever`의 벡터 유사도 검색(임베딩 최근접).
+- **lexical 채널**: RediSearch가 색인 시 구축한 역 인덱스(inverted index)를 `FT.SEARCH`로 조회한다. `EgovLexicalQueryBuilder`가 질의를 단계적으로 완화하며 — 어절을 모두 포함하는 정확매칭(`@content:(t1 t2 …)`, AND) → 접두 일치(`@content:(t1* | t2* …)`, OR) → 부분 포함(`@content:(*t1* | *t2* …)`, OR) — 결과가 처음 나오는 단계의 결과를 즉시 사용한다.
+- **융합**: 두 채널의 순위를 RRF(`score = Σ weight / (k + rank)`, k=60)로 합산해 상위 Top K를 반환한다. lexical 단독 문서(dense 결과에 없는 키)는 순위 가중치로만 반영되고, 본문은 dense 채널이 보유한 문서만 최종 결과에 포함된다.
+
+별도의 lexical 인덱스를 새로 만들지 않고, dense 검색이 사용하는 것과 동일한 인덱스(`spring.ai.vectorstore.redis.index-name`, 기본 `document-index`)를 재사용한다.
+
+#### 주의 사항
+
+lexical `FT.SEARCH`는 벡터 스키마가 구성된 인덱스 위에서 동작한다. 따라서 최초 1회는 `spring.ai.vectorstore.redis.initialize-schema: true`로 실행해 스키마·인덱스를 생성한 뒤(이후 `false`) 하이브리드를 활성화하는 것을 권장한다. 인덱스가 없거나 `FT.SEARCH`가 실패하면 예외를 잡아 해당 요청은 dense 결과만 반환하므로(graceful fallback) 검색이 중단되지는 않지만, 그 요청에서 lexical 채널은 무력화된다.
+
 ## 문제 해결
 
 ### Ollama 연결 실패
