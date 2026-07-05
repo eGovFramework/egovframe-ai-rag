@@ -85,6 +85,8 @@ public class EgovMarkdownReader {
 
         Metadata metadata = Metadata.from("id", docId);
         metadata.put("source", filename);
+        // PDF·HWP·HWPX 리더와 동일하게 file_name을 남긴다(출처 표기 시 리더 간 메타데이터 정합).
+        metadata.put("file_name", filename);
         metadata.put("type", "markdown");
         metadata.put("content_length", String.valueOf(content.length()));
         // (?s) DOTALL: 여러 줄 마크다운에서도 '.'이 줄바꿈을 포함해 전체 매칭되도록 한다

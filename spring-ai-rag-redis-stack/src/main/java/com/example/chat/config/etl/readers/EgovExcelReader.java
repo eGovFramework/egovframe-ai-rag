@@ -162,6 +162,7 @@ public class EgovExcelReader implements DocumentReader {
     private Map<String, Object> createMetadata(String filename, String sheetName, int sheetIdx, String content) {
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("source", filename);
+        metadata.put("file_name", filename);
         metadata.put("type", "xlsx");
         metadata.put("sheet_name", sheetName);
         metadata.put("sheet_index", sheetIdx);
