@@ -59,10 +59,9 @@ public final class EgovInjectionGuardSupport {
     }
 
     private static boolean isRemovedCharacter(int codePoint) {
-        return codePoint == 0x200B
-                || codePoint == 0x200C
-                || codePoint == 0x200D
-                || codePoint == 0xFEFF
+        // 유니코드 Cf(FORMAT) 부류 전체를 제거해 제로폭 공백(U+200B~U+200D)·BOM(U+FEFF)뿐
+        // 아니라 WORD JOINER(U+2060)·방향 제어문자(U+200E/U+200F) 등을 이용한 우회를 흡수한다.
+        return Character.getType(codePoint) == Character.FORMAT
                 || Character.isISOControl(codePoint);
     }
 }
