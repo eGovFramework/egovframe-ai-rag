@@ -118,6 +118,16 @@ public class EgovSessionAwareChatServiceImpl extends EgovAbstractServiceImpl imp
         try {
             log.debug("세션 {} 일반 응답 생성 시작", sessionId);
 
+            EgovInjectionGuard.GuardDecision decision = injectionGuard.inspect(query);
+            if (decision.matched()) {
+                log.warn("프롬프트 인젝션 의심 질의 - 세션: {}, 정책: {}, 패턴: {}", sessionId,
+                        decision.policy(), decision.matchedPattern());
+            }
+            if (!decision.allowed()) {
+                return Flux.just(new ChatResponse(
+                        List.of(new Generation(new AssistantMessage(GUIDANCE_MESSAGE)))));
+            }
+
             // 원본 질문으로 ChatClientRequestSpec 생성 (RAG 없으므로 압축 불필요)
             ChatClientRequestSpec requestSpec = createRequestSpec(query, model);
 
