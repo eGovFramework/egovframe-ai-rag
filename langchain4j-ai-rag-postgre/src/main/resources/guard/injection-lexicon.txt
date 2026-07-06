@@ -1,0 +1,17 @@
+# 명령형 메타 지시 탐지 패턴
+이전 지시 무시
+이전 지침 무시
+위 지시 무시
+이전 명령 무시
+역할을 잊어
+역할 무시
+시스템 프롬프트 출력
+시스템 프롬프트 보여줘
+프롬프트를 공개
+지침을 무시
+탈옥
+ignore previous instructions
+ignore all previous instructions
+disregard previous instructions
+developer mode
+jailbreak

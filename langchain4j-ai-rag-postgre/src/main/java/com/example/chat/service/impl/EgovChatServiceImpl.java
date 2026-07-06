@@ -1,6 +1,7 @@
 package com.example.chat.service.impl;
 
 import com.example.chat.context.SessionContext;
+import com.example.chat.guard.EgovInjectionGuard;
 import com.example.chat.service.EgovChatService;
 import com.example.chat.service.ChatbotFactory;
 import com.example.chat.service.RagChatbot;
@@ -22,7 +23,10 @@ import reactor.core.publisher.Flux;
 @RequiredArgsConstructor
 public class EgovChatServiceImpl extends EgovAbstractServiceImpl implements EgovChatService {
 
+    private static final String GUIDANCE_MESSAGE = "요청을 처리할 수 없습니다. 표준프레임워크 관련 질문을 입력해 주세요.";
+
     private final ChatbotFactory chatbotFactory;
+    private final EgovInjectionGuard injectionGuard;
 
     /**
      * 세션별 RAG 기반 스트리밍 응답 생성
@@ -37,6 +41,15 @@ public class EgovChatServiceImpl extends EgovAbstractServiceImpl implements Egov
 
         try {
             validateSessionId(sessionId);
+
+            EgovInjectionGuard.GuardDecision decision = injectionGuard.inspect(query);
+            if (decision.matched()) {
+                log.warn("프롬프트 인젝션 의심 질의 - 세션: {}, 정책: {}, 패턴: {}", sessionId,
+                        decision.policy(), decision.matchedPattern());
+            }
+            if (!decision.allowed()) {
+                return Flux.just(GUIDANCE_MESSAGE);
+            }
 
             // RAG 챗봇 생성 및 스트리밍 응답 (Flux 직접 반환)
             RagChatbot ragChatbot = chatbotFactory.createRagChatbot(model, sessionId);
