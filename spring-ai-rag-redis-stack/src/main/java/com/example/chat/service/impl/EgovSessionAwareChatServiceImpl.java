@@ -156,6 +156,15 @@ public class EgovSessionAwareChatServiceImpl extends EgovAbstractServiceImpl imp
         log.info("기술 정보 JSON 응답 생성: {}", query);
 
         try {
+            EgovInjectionGuard.GuardDecision decision = injectionGuard.inspect(query);
+            if (decision.matched()) {
+                log.warn("프롬프트 인젝션 의심 질의 - 정책: {}, 패턴: {}",
+                        decision.policy(), decision.matchedPattern());
+            }
+            if (!decision.allowed()) {
+                return new TechnologyResponse("차단됨", "차단됨", GUIDANCE_MESSAGE, null, null);
+            }
+
             // 커스텀 StructuredOutputConverter 사용하여 <think> 태그 처리
             return ollamaChatClient.prompt()
                     .user(u -> u.text("다음 질문에 대해 기술 정보를 제공해주세요: {query}")
