@@ -1,12 +1,16 @@
 package com.example.chat.service.impl;
 
+import java.util.List;
+
 import org.egovframe.rte.fdl.cmmn.EgovAbstractServiceImpl;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.ChatClient.ChatClientRequestSpec;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.converter.StructuredOutputConverter;
 import org.springframework.beans.factory.annotation.Value;
@@ -71,9 +75,8 @@ public class EgovSessionAwareChatServiceImpl extends EgovAbstractServiceImpl imp
                         decision.policy(), decision.matchedPattern());
             }
             if (!decision.allowed()) {
-                return Flux.just(new org.springframework.ai.chat.model.ChatResponse(
-                        java.util.List.of(new org.springframework.ai.chat.model.Generation(
-                                new org.springframework.ai.chat.messages.AssistantMessage(GUIDANCE_MESSAGE)))));
+                return Flux.just(new ChatResponse(
+                        List.of(new Generation(new AssistantMessage(GUIDANCE_MESSAGE)))));
             }
 
             // 원본 질문으로 ChatClientRequestSpec 생성 (사용자 메시지로 저장)
