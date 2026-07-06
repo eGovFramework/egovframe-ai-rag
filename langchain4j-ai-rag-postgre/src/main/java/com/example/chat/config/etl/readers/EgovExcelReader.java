@@ -5,6 +5,7 @@ import dev.langchain4j.data.document.Metadata;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.DateUtil;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -15,6 +16,8 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringJoiner;
@@ -167,6 +170,12 @@ public class EgovExcelReader {
             case STRING:
                 return cell.getStringCellValue().trim();
             case NUMERIC:
+                if (DateUtil.isCellDateFormatted(cell)) {
+                    LocalDateTime dateTime = cell.getLocalDateTimeCellValue();
+                    return dateTime.toLocalTime().equals(LocalTime.MIDNIGHT)
+                            ? dateTime.toLocalDate().toString()
+                            : dateTime.toString();
+                }
                 double numericValue = cell.getNumericCellValue();
                 if (numericValue == Math.floor(numericValue) && !Double.isInfinite(numericValue)) {
                     return String.valueOf((long) numericValue);
