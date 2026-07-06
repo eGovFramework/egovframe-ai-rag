@@ -50,20 +50,22 @@ public class EgovInjectionGuard {
             log.warn("프롬프트 인젝션 기본 렉시콘을 불러오지 못했습니다.", e);
         }
 
-        if (lexiconPath == null || lexiconPath.trim().isEmpty()) {
-            return;
+        if (lexiconPath != null && !lexiconPath.trim().isEmpty()) {
+            Path extensionPath = Path.of(lexiconPath.trim());
+            if (!Files.exists(extensionPath)) {
+                log.warn("프롬프트 인젝션 확장 렉시콘 파일이 존재하지 않습니다: {}", extensionPath);
+            } else {
+                try (BufferedReader reader = Files.newBufferedReader(extensionPath, StandardCharsets.UTF_8)) {
+                    addLines(reader);
+                } catch (IOException e) {
+                    log.warn("프롬프트 인젝션 확장 렉시콘을 불러오지 못했습니다: {}", extensionPath, e);
+                }
+            }
         }
 
-        Path extensionPath = Path.of(lexiconPath.trim());
-        if (!Files.exists(extensionPath)) {
-            log.warn("프롬프트 인젝션 확장 렉시콘 파일이 존재하지 않습니다: {}", extensionPath);
-            return;
-        }
-
-        try (BufferedReader reader = Files.newBufferedReader(extensionPath, StandardCharsets.UTF_8)) {
-            addLines(reader);
-        } catch (IOException e) {
-            log.warn("프롬프트 인젝션 확장 렉시콘을 불러오지 못했습니다: {}", extensionPath, e);
+        if (!isSupportedPolicy(policy)) {
+            log.warn("인식할 수 없는 프롬프트 인젝션 정책값입니다. log 정책으로 폴백합니다: {}", policy);
+            policy = "log";
         }
     }
 
@@ -91,6 +93,10 @@ public class EgovInjectionGuard {
                 .orElse(null);
         boolean allowed = !"block".equalsIgnoreCase(policy);
         return new GuardDecision(allowed, true, policy, matchedPattern);
+    }
+
+    private static boolean isSupportedPolicy(String value) {
+        return "log".equalsIgnoreCase(value) || "block".equalsIgnoreCase(value);
     }
 
     private void addLines(BufferedReader reader) throws IOException {
