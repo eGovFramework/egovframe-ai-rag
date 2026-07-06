@@ -75,6 +75,15 @@ public class EgovChatServiceImpl extends EgovAbstractServiceImpl implements Egov
         try {
             validateSessionId(sessionId);
 
+            EgovInjectionGuard.GuardDecision decision = injectionGuard.inspect(query);
+            if (decision.matched()) {
+                log.warn("프롬프트 인젝션 의심 질의 - 세션: {}, 정책: {}, 패턴: {}", sessionId,
+                        decision.policy(), decision.matchedPattern());
+            }
+            if (!decision.allowed()) {
+                return Flux.just(GUIDANCE_MESSAGE);
+            }
+
             // Simple 챗봇 생성 및 스트리밍 응답 (Flux 직접 반환)
             SimpleChatbot simpleChatbot = chatbotFactory.createSimpleChatbot(model, sessionId);
             return simpleChatbot.streamChat(query)
