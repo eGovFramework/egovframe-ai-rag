@@ -1,6 +1,8 @@
 package com.example.chat.config.etl.readers;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -8,6 +10,7 @@ import java.util.Map;
 
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.DateUtil;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -145,6 +148,12 @@ public class EgovExcelReader implements DocumentReader {
             case STRING:
                 return cell.getStringCellValue().trim();
             case NUMERIC:
+                if (DateUtil.isCellDateFormatted(cell)) {
+                    LocalDateTime dateTime = cell.getLocalDateTimeCellValue();
+                    return dateTime.toLocalTime().equals(LocalTime.MIDNIGHT)
+                            ? dateTime.toLocalDate().toString()
+                            : dateTime.toString();
+                }
                 double numVal = cell.getNumericCellValue();
                 if (numVal == Math.floor(numVal) && !Double.isInfinite(numVal)) {
                     return String.valueOf((long) numVal);
