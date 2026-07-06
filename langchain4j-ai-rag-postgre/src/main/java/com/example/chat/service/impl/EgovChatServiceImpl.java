@@ -104,6 +104,15 @@ public class EgovChatServiceImpl extends EgovAbstractServiceImpl implements Egov
         log.info("RAG 응답 생성 (비스트리밍) - 세션: {}, 쿼리: {}", sessionId, query);
 
         try {
+            EgovInjectionGuard.GuardDecision decision = injectionGuard.inspect(query);
+            if (decision.matched()) {
+                log.warn("프롬프트 인젝션 의심 질의 - 세션: {}, 정책: {}, 패턴: {}", sessionId,
+                        decision.policy(), decision.matchedPattern());
+            }
+            if (!decision.allowed()) {
+                return GUIDANCE_MESSAGE;
+            }
+
             RagChatbot ragChatbot = chatbotFactory.createRagChatbot(null, sessionId);
             return ragChatbot.chat(query);
 
@@ -121,6 +130,15 @@ public class EgovChatServiceImpl extends EgovAbstractServiceImpl implements Egov
         log.info("Simple 응답 생성 (비스트리밍) - 세션: {}, 쿼리: {}", sessionId, query);
 
         try {
+            EgovInjectionGuard.GuardDecision decision = injectionGuard.inspect(query);
+            if (decision.matched()) {
+                log.warn("프롬프트 인젝션 의심 질의 - 세션: {}, 정책: {}, 패턴: {}", sessionId,
+                        decision.policy(), decision.matchedPattern());
+            }
+            if (!decision.allowed()) {
+                return GUIDANCE_MESSAGE;
+            }
+
             SimpleChatbot simpleChatbot = chatbotFactory.createSimpleChatbot(null, sessionId);
             return simpleChatbot.chat(query);
 
