@@ -121,6 +121,11 @@ rag:
   # RAG 검색 결과 개수 (Top K)
   top-k: 3
 
+  guard:
+    enabled: false        # 기본 OFF → 기존 동작 완전 보존
+    policy: log           # log | block
+    lexicon-path:         # (옵션) 운영자 확장 렉시콘 외부경로. 미설정 시 시드만
+
   # 하이브리드 검색(dense 벡터 + lexical RediSearch FT.SEARCH) 설정
   # enabled:true 일 때만 lexical 채널(JedisPooled)·하이브리드 retriever 빈이 등록된다.
   # off(기본)에서는 기존 dense 단독 검색이 그대로 동작한다(빈 모호성 없음).
