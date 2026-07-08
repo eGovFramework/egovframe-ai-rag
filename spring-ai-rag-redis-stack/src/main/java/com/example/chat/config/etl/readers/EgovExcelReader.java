@@ -35,6 +35,11 @@ public class EgovExcelReader implements DocumentReader {
     @Value("${spring.ai.document.xlsx-path:#{null}}")
     private String xlsxDocumentPath;
 
+    // 시트 하나를 통째로 Document 하나로 만들면 업무일지처럼 행이 많은 시트에서 컨텍스트 초과가
+    // 발생하므로(PDF 리더의 pagesPerDocument와 동일한 이유), N행 단위로 나눠 시트당 여러 Document를 생성한다.
+    @Value("${spring.ai.document.excel.rows-per-document:200}")
+    private int rowsPerDocument;
+
     @Override
     public List<Document> get() {
         if (xlsxDocumentPath == null || xlsxDocumentPath.isBlank()) {
@@ -87,17 +92,27 @@ public class EgovExcelReader implements DocumentReader {
                 Sheet sheet = workbook.getSheetAt(sheetIdx);
                 String sheetName = sheet.getSheetName();
 
-                String content = extractSheetContent(sheet);
-                if (content == null || content.trim().isEmpty()) {
+                List<String> rowLines = extractSheetRowLines(sheet);
+                if (rowLines.isEmpty()) {
                     log.debug("Excel 시트 '{}/{}': 내용 없음, 건너뜀", filename, sheetName);
                     continue;
                 }
 
-                Map<String, Object> metadata = createMetadata(filename, sheetName, sheetIdx, content);
-                String docId = buildDocId(filename, sheetName, sheetIdx);
+                int chunkCount = (int) Math.ceil((double) rowLines.size() / rowsPerDocument);
+                for (int chunkIdx = 0; chunkIdx < chunkCount; chunkIdx++) {
+                    int fromRow = chunkIdx * rowsPerDocument;
+                    int toRow = Math.min(fromRow + rowsPerDocument, rowLines.size());
+                    String content = String.join("\n", rowLines.subList(fromRow, toRow));
 
-                documents.add(new Document(docId, content, metadata));
-                log.info("Excel 시트 '{}/{}' 로드 완료, 크기: {}바이트", filename, sheetName, content.length());
+                    Map<String, Object> metadata = createMetadata(filename, sheetName, sheetIdx, content);
+                    metadata.put("chunk_index", chunkIdx + 1);
+                    metadata.put("chunk_count", chunkCount);
+                    String docId = buildDocId(filename, sheetName, sheetIdx, chunkIdx);
+
+                    documents.add(new Document(docId, content, metadata));
+                    log.info("Excel 시트 '{}/{}' 청크 {}/{} 로드 완료, 크기: {}바이트",
+                            filename, sheetName, chunkIdx + 1, chunkCount, content.length());
+                }
             }
         }
 
@@ -105,10 +120,12 @@ public class EgovExcelReader implements DocumentReader {
     }
 
     /**
-     * 시트의 모든 행을 순회하여 탭 구분 행 텍스트를 줄바꿈으로 이어 붙인다.
+     * 시트의 모든 행을 탭 구분 텍스트 한 줄씩으로 추출(빈 행 제외).
+     * 시트 전체를 하나의 문자열로 합치지 않고 행 단위 목록으로 반환해,
+     * 호출부에서 N행 단위로 잘라 여러 Document로 나눌 수 있게 한다.
      */
-    private String extractSheetContent(Sheet sheet) {
-        StringBuilder sb = new StringBuilder();
+    private List<String> extractSheetRowLines(Sheet sheet) {
+        List<String> lines = new ArrayList<>();
 
         for (Row row : sheet) {
             StringBuilder rowSb = new StringBuilder();
@@ -126,14 +143,11 @@ public class EgovExcelReader implements DocumentReader {
             }
 
             if (hasContent) {
-                if (sb.length() > 0) {
-                    sb.append('\n');
-                }
-                sb.append(rowSb);
+                lines.add(rowSb.toString());
             }
         }
 
-        return sb.toString();
+        return lines;
     }
 
     private String getCellValueAsString(Cell cell) {
@@ -180,10 +194,10 @@ public class EgovExcelReader implements DocumentReader {
         return metadata;
     }
 
-    private String buildDocId(String filename, String sheetName, int sheetIdx) {
+    private String buildDocId(String filename, String sheetName, int sheetIdx, int chunkIdx) {
         String baseFilename = filename.replaceAll("\\.xlsx$", "");
         String safeFilename = baseFilename.replaceAll("[\\/:*?\"<>|]", "").replaceAll("\\s+", "-");
         String safeSheet = sheetName.replaceAll("[\\/:*?\"<>|]", "").replaceAll("\\s+", "-");
-        return String.format("xlsx-%s_%d-%s", safeFilename, sheetIdx, safeSheet);
+        return String.format("xlsx-%s_%d-%s_chunk%d", safeFilename, sheetIdx, safeSheet, chunkIdx + 1);
     }
 }
