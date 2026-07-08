@@ -33,6 +33,11 @@ public class EgovExcelReader {
     @Value("${document.xlsx-path:#{null}}")
     private String excelDocumentPath;
 
+    // 시트 하나를 통째로 Document 하나로 만들면 업무일지처럼 행이 많은 시트에서 컨텍스트 초과가
+    // 발생하므로(PDF 리더의 pagesPerDocument와 동일한 이유), N행 단위로 나눠 시트당 여러 Document를 생성한다.
+    @Value("${document.excel.rows-per-document:200}")
+    private int rowsPerDocument;
+
     /**
      * Excel 문서 로드
      */
@@ -97,9 +102,9 @@ public class EgovExcelReader {
             for (int i = 0; i < sheetCount; i++) {
                 Sheet sheet = workbook.getSheetAt(i);
                 String sheetName = sheet.getSheetName();
-                String content = extractSheetText(sheet);
+                List<String> rowLines = extractSheetRowLines(sheet);
 
-                if (content.trim().isEmpty()) {
+                if (rowLines.isEmpty()) {
                     log.debug("빈 시트 건너뜀: {} / {}", filename, sheetName);
                     continue;
                 }
@@ -107,19 +112,30 @@ public class EgovExcelReader {
                 String baseFilename = filename.replaceAll("\\.xlsx$", "");
                 String safeFilename = baseFilename.replaceAll("[\\/:*?\"<>|]", "")
                         .replaceAll("\\s+", "-");
-                String customId = String.format("excel-%s_sheet%d", safeFilename, i + 1);
 
-                Metadata metadata = Metadata.from("id", customId);
-                metadata.put("file_name", filename);
-                metadata.put("source", filename);
-                metadata.put("type", "excel");
-                metadata.put("sheet_name", sheetName);
-                metadata.put("sheet_index", String.valueOf(i + 1));
-                metadata.put("content_length", String.valueOf(content.length()));
+                int chunkCount = (int) Math.ceil((double) rowLines.size() / rowsPerDocument);
+                for (int chunkIdx = 0; chunkIdx < chunkCount; chunkIdx++) {
+                    int fromRow = chunkIdx * rowsPerDocument;
+                    int toRow = Math.min(fromRow + rowsPerDocument, rowLines.size());
+                    String content = String.join("\n", rowLines.subList(fromRow, toRow)) + "\n";
 
-                log.debug("Excel Document ID: {} (시트: {}, 길이: {})", customId, sheetName, content.length());
+                    String customId = String.format("excel-%s_sheet%d_chunk%d", safeFilename, i + 1, chunkIdx + 1);
 
-                documents.add(Document.from(content, metadata));
+                    Metadata metadata = Metadata.from("id", customId);
+                    metadata.put("file_name", filename);
+                    metadata.put("source", filename);
+                    metadata.put("type", "excel");
+                    metadata.put("sheet_name", sheetName);
+                    metadata.put("sheet_index", String.valueOf(i + 1));
+                    metadata.put("chunk_index", String.valueOf(chunkIdx + 1));
+                    metadata.put("chunk_count", String.valueOf(chunkCount));
+                    metadata.put("content_length", String.valueOf(content.length()));
+
+                    log.debug("Excel Document ID: {} (시트: {}, 청크: {}/{}, 길이: {})",
+                            customId, sheetName, chunkIdx + 1, chunkCount, content.length());
+
+                    documents.add(Document.from(content, metadata));
+                }
             }
         }
 
@@ -127,10 +143,12 @@ public class EgovExcelReader {
     }
 
     /**
-     * 시트의 모든 행/셀을 탭 구분 텍스트로 추출
+     * 시트의 모든 행을 탭 구분 텍스트 한 줄씩으로 추출(빈 행 제외).
+     * 시트 전체를 하나의 문자열로 합치지 않고 행 단위 목록으로 반환해,
+     * 호출부에서 N행 단위로 잘라 여러 Document로 나눌 수 있게 한다.
      */
-    private String extractSheetText(Sheet sheet) {
-        StringBuilder sb = new StringBuilder();
+    private List<String> extractSheetRowLines(Sheet sheet) {
+        List<String> lines = new ArrayList<>();
 
         for (Row row : sheet) {
             StringJoiner rowJoiner = new StringJoiner("\t");
@@ -145,11 +163,11 @@ public class EgovExcelReader {
             }
 
             if (hasValue) {
-                sb.append(rowJoiner).append("\n");
+                lines.add(rowJoiner.toString());
             }
         }
 
-        return sb.toString();
+        return lines;
     }
 
     /**

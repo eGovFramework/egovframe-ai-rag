@@ -79,6 +79,11 @@ document:
     page-top-margin: 0
     pages-per-document: 1
 
+  # Excel 리더 설정 — 업무일지처럼 행이 많은 시트가 통째로 하나의 Document가 되어
+  # 검색 시 컨텍스트를 초과하지 않도록, 시트를 N행 단위로 나눠 여러 Document로 생성한다.
+  excel:
+    rows-per-document: 200
+
   # 문서 변환 설정
   # 청크 크기 설정 (토큰 단위)
   chunk-size: 4000
