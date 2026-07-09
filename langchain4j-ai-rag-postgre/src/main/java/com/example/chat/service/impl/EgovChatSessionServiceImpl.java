@@ -6,6 +6,7 @@ import com.example.chat.entity.ChatMemoryEntity;
 import com.example.chat.entity.ChatSessionEntity;
 import com.example.chat.repository.ChatMemoryRepository;
 import com.example.chat.repository.ChatSessionRepository;
+import com.example.chat.repository.PersistentChatMemoryStore;
 import com.example.chat.service.EgovChatSessionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -63,13 +64,18 @@ public class EgovChatSessionServiceImpl extends EgovAbstractServiceImpl implemen
         List<ChatMemoryEntity> entities = chatMemoryRepository.findBySessionIdOrderByCreatedAtAsc(sessionId);
 
         // USER와 ASSISTANT 메시지만 반환 (SYSTEM 메시지 제외)
+        // USER 메시지는 RAG 증강 구분자 이후 내용(검색 결과)을 제거하고 원본 질의만 반환한다.
         return entities.stream()
                 .filter(entity -> "USER".equals(entity.getMessageType()) ||
                         "ASSISTANT".equals(entity.getMessageType()))
-                .map(entity -> new ChatMessageDto(
-                        entity.getMessageType(),
-                        entity.getContent(),
-                        entity.getCreatedAt()))
+                .map(entity -> {
+                    String content = entity.getContent();
+                    if ("USER".equals(entity.getMessageType())) {
+                        int sep = content.indexOf(PersistentChatMemoryStore.RAG_SEP);
+                        if (sep >= 0) content = content.substring(0, sep);
+                    }
+                    return new ChatMessageDto(entity.getMessageType(), content, entity.getCreatedAt());
+                })
                 .collect(Collectors.toList());
     }
 
