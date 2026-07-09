@@ -23,9 +23,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 class EgovDocumentServiceImplUploadValidationTest {
 
     private final EgovDocumentServiceImpl service =
-            // 인자 수는 EgovDocumentServiceImpl 생성자(리더 5 + 변환 2 + writer + vectorStore
-            // + stringRedisTemplate + executor = 11)와 일치.
-            new EgovDocumentServiceImpl(null, null, null, null, null, null, null, null, null, null, null);
+            // 인자 수는 EgovDocumentServiceImpl 생성자(리더 5 + 변환 3[PII 마스킹 포함] + writer
+            // + vectorStore + stringRedisTemplate + executor = 12)와 일치.
+            new EgovDocumentServiceImpl(null, null, null, null, null, null, null, null, null, null, null, null);
 
     private MockMultipartFile md(String filename, int size) {
         return new MockMultipartFile("files", filename, "text/markdown", new byte[size]);
