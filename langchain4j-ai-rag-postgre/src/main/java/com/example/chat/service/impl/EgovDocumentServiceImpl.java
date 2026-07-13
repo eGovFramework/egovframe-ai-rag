@@ -39,6 +39,12 @@ public class EgovDocumentServiceImpl extends EgovAbstractServiceImpl implements 
     @Value("${document.path}")
     private String documentPath;
 
+    @Value("${document.hwp-path:#{null}}")
+    private String hwpDocumentPath;
+
+    @Value("${document.hwpx-path:#{null}}")
+    private String hwpxDocumentPath;
+
     // ETL 파이프라인 컴포넌트들
     private final EgovMarkdownReader egovMarkdownReader;
     private final EgovPdfReader egovPdfReader;
@@ -161,7 +167,7 @@ public class EgovDocumentServiceImpl extends EgovAbstractServiceImpl implements 
     }
 
     @Override
-    public Map<String, Object> uploadMarkdownFiles(MultipartFile[] files) {
+    public Map<String, Object> uploadDocumentFiles(MultipartFile[] files) {
         // 결과 맵 초기화
         Map<String, Object> result = new HashMap<>();
         if (files == null || files.length == 0) {
@@ -187,9 +193,9 @@ public class EgovDocumentServiceImpl extends EgovAbstractServiceImpl implements 
                 return result;
             }
             String filename = Paths.get(originalFilename).getFileName().toString();
-            if (!filename.endsWith(".md")) {
+            if (!SUPPORTED_UPLOAD_EXTENSIONS.contains(extractExtension(filename))) {
                 result.put("success", false);
-                result.put("message", "마크다운(.md) 파일만 업로드 가능합니다.");
+                result.put("message", "지원하지 않는 파일 형식입니다. (.md, .hwp, .hwpx 파일만 업로드 가능합니다.)");
                 result.putIfAbsent("files", Collections.emptyList());
                 return result;
             }
@@ -207,15 +213,22 @@ public class EgovDocumentServiceImpl extends EgovAbstractServiceImpl implements 
             result.putIfAbsent("files", Collections.emptyList());
             return result;
         }
-        // 저장 경로 (file: 프리픽스 제거)
-        String cleanPath = documentPath.replace("file:", "");
-        // 와일드카드 패턴 제거
-        cleanPath = cleanPath.replaceAll("/\\*\\*/\\*\\.md$", "");
-        File dir = new File(cleanPath);
-        if (!dir.exists())
-            dir.mkdirs();
         for (MultipartFile file : files) {
             String filename = Paths.get(file.getOriginalFilename()).getFileName().toString();
+            String extension = extractExtension(filename);
+            // 확장자별 리더가 스캔하는 경로 패턴의 기본 디렉토리에 저장한다.
+            String baseDir = resolveUploadBaseDir(targetPathPatternOf(extension));
+            if (baseDir == null) {
+                result.put("success", false);
+                result.put("message", extension + " 파일을 저장할 문서 경로가 설정되지 않았습니다. ("
+                        + uploadPathPropertyOf(extension) + " 설정 필요)");
+                result.putIfAbsent("files", Collections.emptyList());
+                return result;
+            }
+            // 저장 경로
+            File dir = new File(baseDir);
+            if (!dir.exists())
+                dir.mkdirs();
             File dest = new File(dir, filename);
             try {
                 // 경로 탐색(Path Traversal) 방어: 저장 경로가 허용된 디렉토리 내인지 검증
@@ -238,6 +251,73 @@ public class EgovDocumentServiceImpl extends EgovAbstractServiceImpl implements 
         return result;
     }
 
+    /** 업로드를 허용하는 확장자 목록 */
+    private static final List<String> SUPPORTED_UPLOAD_EXTENSIONS = List.of(".md", ".hwp", ".hwpx");
+
+    /**
+     * 파일명에서 소문자 확장자를 추출한다. (예: "Doc.HWP" → ".hwp", 확장자가 없으면 "")
+     */
+    static String extractExtension(String filename) {
+        int dot = filename.lastIndexOf('.');
+        return dot < 0 ? "" : filename.substring(dot).toLowerCase();
+    }
+
+    /**
+     * 확장자에 해당하는 문서 경로 설정 프로퍼티명을 반환한다. (안내 메시지용)
+     */
+    private static String uploadPathPropertyOf(String extension) {
+        switch (extension) {
+            case ".hwp":
+                return "document.hwp-path";
+            case ".hwpx":
+                return "document.hwpx-path";
+            default:
+                return "document.path";
+        }
+    }
+
+    /**
+     * 확장자에 해당하는 문서 경로 패턴 설정값을 반환한다.
+     */
+    private String targetPathPatternOf(String extension) {
+        switch (extension) {
+            case ".hwp":
+                return hwpDocumentPath;
+            case ".hwpx":
+                return hwpxDocumentPath;
+            default:
+                return documentPath;
+        }
+    }
+
+    /**
+     * 문서 경로 패턴(예: file:C:/data/&#42;&#42;/&#42;.md)에서 업로드 저장 대상 기본 디렉토리를 추출한다.
+     * "file:" 접두어를 제거하고 첫 와일드카드(*, ?) 이전 디렉토리까지를 반환한다.
+     * 패턴이 없거나 파일시스템 경로가 아니면(classpath: 등) null을 반환한다.
+     */
+    static String resolveUploadBaseDir(String pathPattern) {
+        if (pathPattern == null || pathPattern.isBlank()) {
+            return null;
+        }
+        String path = pathPattern.trim();
+        if (path.startsWith("file:")) {
+            path = path.substring("file:".length());
+        } else if (path.indexOf(':') > 1) {
+            // file: 이외의 프로토콜(classpath: 등)은 파일 저장 대상이 아니다. (드라이브 문자 "C:" 는 허용)
+            return null;
+        }
+        int star = path.indexOf('*');
+        int question = path.indexOf('?');
+        int wildcard = (star < 0) ? question : (question < 0 ? star : Math.min(star, question));
+        if (wildcard >= 0) {
+            int lastSlash = Math.max(path.lastIndexOf('/', wildcard), path.lastIndexOf('\\', wildcard));
+            if (lastSlash < 0) {
+                return null;
+            }
+            path = path.substring(0, lastSlash);
+        }
+        return path.isBlank() ? null : path;
+    }
     @Override
     public String reindexDocuments() {
         log.info("문서 재인덱싱 요청 수신");
