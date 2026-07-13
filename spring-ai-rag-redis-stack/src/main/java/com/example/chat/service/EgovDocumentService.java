@@ -26,8 +26,8 @@ public interface EgovDocumentService {
     int getTotalCount();
     int getChangedCount();
 
-    // 파일 업로드 및 검증/저장
-    Map<String, Object> uploadMarkdownFiles(MultipartFile[] files);
+    // 파일 업로드 및 검증/저장 (.md, .hwp, .hwpx 지원)
+    Map<String, Object> uploadDocumentFiles(MultipartFile[] files);
 
     // 재인덱싱 요청(비동기) 및 결과 메시지 반환
     String reindexDocuments();
