@@ -7,6 +7,8 @@ import dev.langchain4j.rag.query.Query;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
@@ -28,6 +30,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @Testcontainers(disabledWithoutDocker = true)
 class EgovRetrievalRecallPoCTest {
+
+    private static final Logger log = LoggerFactory.getLogger(EgovRetrievalRecallPoCTest.class);
 
     private static final String TABLE = "document_embeddings";
     private static final int TOP_K = 3;
@@ -163,12 +167,12 @@ class EgovRetrievalRecallPoCTest {
             assertThat(retrievedDocIds).hasSizeLessThanOrEqualTo(TOP_K);
             double recall = recallAtK(retrievedDocIds, List.of(seed.goldDocId()), TOP_K);
             recallSum += recall;
-            System.out.println("[recall@3] 질의='" + seed.question() + "' gold=" + seed.goldDocId()
-                    + " retrieved=" + retrievedDocIds + " recall=" + recall);
+            log.info("[recall@3] 질의='{}' gold={} retrieved={} recall={}",
+                    seed.question(), seed.goldDocId(), retrievedDocIds, recall);
         }
 
         double averageRecall = recallSum / QA_SEEDS.size();
-        System.out.println("[평균 recall@3] " + averageRecall);
+        log.info("[평균 recall@3] {}", averageRecall);
         assertThat(averageRecall).isGreaterThanOrEqualTo(0.6);
     }
 
