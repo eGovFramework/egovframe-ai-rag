@@ -7,6 +7,8 @@ import dev.langchain4j.model.ollama.OllamaStreamingChatModel;
 import dev.langchain4j.rag.content.retriever.ContentRetriever;
 import dev.langchain4j.service.AiServices;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -41,12 +43,24 @@ public class ChatbotFactory {
     @Value("${chat.memory.max-messages:20}")
     private int maxMessages;
 
-    public ChatbotFactory(ContentRetriever contentRetriever,
-                          PersistentChatMemoryStore chatMemoryStore,
-                          OllamaStreamingChatModel defaultStreamingModel) {
-        this.contentRetriever = contentRetriever;
+    /**
+     * @param hybridContentRetriever 하이브리드 검색 빈. {@code rag.retrieval.hybrid.enabled=true}
+     *                               일 때만 등록되며 off(기본) 상태에서는 null 이다.
+     * @param denseContentRetriever  dense 벡터 검색 빈. 항상 존재한다.
+     */
+    public ChatbotFactory(
+            @Qualifier("hybridContentRetriever") @Autowired(required = false) ContentRetriever hybridContentRetriever,
+            @Qualifier("contentRetriever") ContentRetriever denseContentRetriever,
+            PersistentChatMemoryStore chatMemoryStore,
+            OllamaStreamingChatModel defaultStreamingModel) {
+        // 하이브리드 빈이 등록된 경우 우선 사용하고, 없으면 기존 dense 경로를 유지한다.
+        this.contentRetriever = (hybridContentRetriever != null) ? hybridContentRetriever : denseContentRetriever;
         this.chatMemoryStore = chatMemoryStore;
         this.defaultStreamingModel = defaultStreamingModel;
+
+        if (hybridContentRetriever != null) {
+            log.info("ChatbotFactory - 하이브리드 ContentRetriever 사용");
+        }
     }
 
     /**

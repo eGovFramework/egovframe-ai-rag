@@ -22,11 +22,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.beans.factory.annotation.Value;
 
+import com.example.chat.config.etl.readers.EgovDocxReader;
 import com.example.chat.config.etl.readers.EgovHwpReader;
+import com.example.chat.config.etl.readers.EgovHwpxReader;
 import com.example.chat.config.etl.readers.EgovMarkdownReader;
 import com.example.chat.config.etl.readers.EgovPdfReader;
 import com.example.chat.config.etl.transformers.EgovEnhancedDocumentTransformer;
 import com.example.chat.config.etl.transformers.EgovContentFormatTransformer;
+import com.example.chat.config.etl.transformers.EgovPiiMaskingTransformer;
 import com.example.chat.config.etl.writers.EgovVectorStoreWriter;
 import com.example.chat.response.DocumentStatusResponse;
 import com.example.chat.service.EgovDocumentService;
@@ -45,9 +48,12 @@ public class EgovDocumentServiceImpl extends EgovAbstractServiceImpl implements 
 
     // ETL 파이프라인 컴포넌트들
     private final EgovMarkdownReader egovMarkdownReader;
+    private final EgovDocxReader egovDocxReader;
     private final EgovPdfReader egovPdfReader;
     private final EgovHwpReader egovHwpReader;
+    private final EgovHwpxReader egovHwpxReader;
     private final EgovContentFormatTransformer egovContentFormatTransformer;
+    private final EgovPiiMaskingTransformer egovPiiMaskingTransformer;
     private final EgovEnhancedDocumentTransformer egovEnhancedDocumentTransformer;
     private final EgovVectorStoreWriter egovVectorStoreWriter;
 
@@ -85,32 +91,37 @@ public class EgovDocumentServiceImpl extends EgovAbstractServiceImpl implements 
 
     @Override
     public CompletableFuture<Integer> loadDocumentsAsync() {
-        if (isProcessing.get()) {
+        // 검사·설정을 단일 원자 연산으로 처리하여 동시 진입(TOCTOU)을 차단한다.
+        if (!isProcessing.compareAndSet(false, true)) {
             log.warn("이미 문서 처리가 진행 중입니다.");
             return CompletableFuture.completedFuture(0);
         }
 
         log.info("Spring AI ETL 파이프라인으로 문서 처리 시작");
-        isProcessing.set(true);
         processedCount.set(0);
         totalCount.set(0);
         changedCount.set(0);
 
         return CompletableFuture.supplyAsync(() -> {
             try {
-                // 1단계: 마크다운, PDF, HWP 문서 읽기
+                // 1단계: 마크다운, DOCX, PDF, HWP, HWPX 문서 읽기
                 List<Document> markdownDocuments = egovMarkdownReader.get();
+                List<Document> docxDocuments = egovDocxReader.get();
                 List<Document> pdfDocuments = egovPdfReader.get();
                 List<Document> hwpDocuments = egovHwpReader.get();
+                List<Document> hwpxDocuments = egovHwpxReader.get();
 
                 List<Document> allDocuments = new ArrayList<>();
                 allDocuments.addAll(markdownDocuments);
+                allDocuments.addAll(docxDocuments);
                 allDocuments.addAll(pdfDocuments);
                 allDocuments.addAll(hwpDocuments);
+                allDocuments.addAll(hwpxDocuments);
 
                 totalCount.set(allDocuments.size());
-                log.info("총 {}개의 문서를 로드했습니다. (마크다운: {}개, PDF: {}개, HWP: {}개)",
-                        allDocuments.size(), markdownDocuments.size(), pdfDocuments.size(), hwpDocuments.size());
+                log.info("총 {}개의 문서를 로드했습니다. (마크다운: {}개, DOCX: {}개, PDF: {}개, HWP: {}개, HWPX: {}개)",
+                        allDocuments.size(), markdownDocuments.size(), docxDocuments.size(),
+                        pdfDocuments.size(), hwpDocuments.size(), hwpxDocuments.size());
 
                 // 2단계: 변경된 문서 필터링
                 List<Document> changedDocuments = filterChangedDocuments(allDocuments);
@@ -128,9 +139,12 @@ public class EgovDocumentServiceImpl extends EgovAbstractServiceImpl implements 
                 List<Document> normalizedDocuments = egovContentFormatTransformer.apply(changedDocuments);
                 log.info("문서 형식 정규화 완료: {}개 문서", normalizedDocuments.size());
 
+                // 3.5단계: 민감정보(PII) 마스킹 (청크 분할 전 전체 문서 단위로 적용, 기본 비활성)
+                List<Document> maskedDocuments = egovPiiMaskingTransformer.apply(normalizedDocuments);
+
                 // 4단계: 문서 변환 (청크 분할, 메타데이터 추가)
                 log.info("문서 변환 시작");
-                List<Document> transformedDocuments = egovEnhancedDocumentTransformer.apply(normalizedDocuments);
+                List<Document> transformedDocuments = egovEnhancedDocumentTransformer.apply(maskedDocuments);
                 log.info("문서 변환 완료: {}개 청크 생성", transformedDocuments.size());
 
                 // 5단계: 벡터 저장소에 저장

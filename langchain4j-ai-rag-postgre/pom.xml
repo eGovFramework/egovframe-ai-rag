@@ -85,6 +85,18 @@
             <artifactId>langchain4j-document-parser-apache-pdfbox</artifactId>
         </dependency>
 
+        <!-- eGovFrame Excel (POI OOXML 전이 의존성 — DOCX 파싱) -->
+        <dependency>
+            <groupId>org.egovframe.rte</groupId>
+            <artifactId>egovframe-rte-fdl-excel</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.commons</groupId>
+                    <artifactId>commons-lang3</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
         <!-- LangChain4j Reactor (Flux 스트리밍 지원) -->
         <dependency>
             <groupId>dev.langchain4j</groupId>
@@ -103,6 +115,19 @@
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
+        </dependency>
+
+        <!-- Testcontainers: 하이브리드 lexical 검색(pg_trgm word_similarity) 실 DB 통합 테스트용.
+             Docker 미가용 환경에서는 @Testcontainers(disabledWithoutDocker=true)로 자동 skip. -->
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
         </dependency>
 
         <!-- Spring Boot Web -->
@@ -174,6 +199,13 @@
             <artifactId>hwplib</artifactId>
             <version>1.1.9</version>
         </dependency>
+        <!-- HWPX 문서 파싱 -->
+        <dependency>
+            <groupId>kr.dogfoot</groupId>
+            <artifactId>hwpxlib</artifactId>
+            <version>1.0.5</version>
+        </dependency>
+
         <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>

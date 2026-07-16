@@ -214,8 +214,24 @@ Flux<ChatResponse> 스트리밍 응답
 
 ## 문서 인덱싱
 
-- 현재 인덱싱 가능한 문서의 종류는 마크다운 파일, PDF 파일, HWP 파일이다.
-- `application.yml` 의 `spring.ai.document.path`, `spring.ai.document.pdf-path`, `spring.ai.document.hwp-path` 에서 확인 가능하다. HWP 경로 속성이 없으면 HWP 처리를 건너뛴다.
+- 현재 인덱싱 가능한 문서의 종류는 마크다운, PDF, HWP, HWPX 파일로 구성되어 있다.
+- `application.yml` 의 `spring.ai.document.path`, `spring.ai.document.pdf-path`, `spring.ai.document.hwp-path`, `spring.ai.document.hwpx-path` 에서 확인 가능하다. 경로 속성이 없으면 해당 형식의 처리를 건너뛴다.
+
+### HWP / HWPX 문서 활성화
+
+`application.yml`의 `hwp-path`, `hwpx-path` 항목은 기본적으로 주석 처리되어 있다. 해당 형식 파일을 인덱싱하려면 주석을 해제하고 경로를 설정한다.
+
+```yaml
+spring:
+  ai:
+    document:
+      # hwp-path 주석 해제 후 실제 경로로 변경
+      hwp-path: file:C:/workspace-test/upload/data/**/*.hwp
+      # hwpx-path 주석 해제 후 실제 경로로 변경
+      hwpx-path: file:C:/workspace-test/upload/data/**/*.hwpx
+```
+
+경로를 설정하지 않으면 해당 리더는 건너뛰며, 다른 형식의 문서 처리에는 영향을 주지 않는다.
 
 ## 실행
 
@@ -278,7 +294,8 @@ spring-ai-rag-redis-stack/
 │   │   │   ├── readers/
 │   │   │   │   ├── EgovMarkdownReader.java         # 마크다운 리더
 │   │   │   │   ├── EgovPdfReader.java              # PDF 리더
-│   │   │   │   └── EgovHwpReader.java              # HWP 리더
+│   │   │   │   ├── EgovHwpReader.java              # HWP 리더
+│   │   │   │   └── EgovHwpxReader.java             # HWPX 리더
 │   │   │   ├── transformers/
 │   │   │   │   ├── EgovContentFormatTransformer.java    # 문서 정규화
 │   │   │   │   └── EgovEnhancedDocumentTransformer.java # 청킹, 메타데이터
@@ -385,6 +402,64 @@ chat:
   memory:
     max-messages: 20                  # 최대 메시지 수
 ```
+
+### 하이브리드 검색 (dense 벡터 + lexical RediSearch)
+
+의미 기반 dense 벡터 검색에 키워드 기반 lexical 검색(RediSearch `FT.SEARCH`)을 더해 [RRF(Reciprocal Rank Fusion)](https://plg.uwaterloo.ca/~gvcormac/cormacksigir09-rrf.pdf)로 융합한다. 정확한 용어·고유명사 질의에서 dense 채널이 놓치는 문서를 lexical 채널이 보완한다. 기본값은 off이며, 켜면 dense 단독 검색은 그대로 두고 lexical 채널과 융합만 추가된다.
+
+#### 활성화 방법
+
+```yaml
+rag:
+  retrieval:
+    hybrid:
+      enabled: true          # 하이브리드 활성화 (기본 false)
+      weight:
+        dense: 1.0           # dense 채널 RRF 가중치
+        lexical: 1.0         # lexical 채널 RRF 가중치
+      # top-k: 3             # 융합 결과 개수 (미지정 시 rag.top-k)
+```
+
+`enabled: true`일 때만 lexical 채널(`JedisPooled`)과 하이브리드 retriever 빈이 등록된다. off(기본)에서는 기존 dense 단독 검색이 그대로 동작하므로 빈 모호성이 발생하지 않는다.
+
+#### 동작 원리
+
+- **dense 채널**: 기존 `VectorStoreDocumentRetriever`의 벡터 유사도 검색(임베딩 최근접).
+- **lexical 채널**: RediSearch가 색인 시 구축한 역 인덱스(inverted index)를 `FT.SEARCH`로 조회한다. `EgovLexicalQueryBuilder`가 질의를 단계적으로 완화하며 — 어절을 모두 포함하는 정확매칭(`@content:(t1 t2 …)`, AND) → 접두 일치(`@content:(t1* | t2* …)`, OR) → 부분 포함(`@content:(*t1* | *t2* …)`, OR) — 결과가 처음 나오는 단계의 결과를 즉시 사용한다.
+- **융합**: 두 채널의 순위를 RRF(`score = Σ weight / (k + rank)`, k=60)로 합산해 상위 Top K를 반환한다. lexical 단독 문서(dense 결과에 없는 키)는 순위 가중치로만 반영되고, 본문은 dense 채널이 보유한 문서만 최종 결과에 포함된다.
+
+별도의 lexical 인덱스를 새로 만들지 않고, dense 검색이 사용하는 것과 동일한 인덱스(`spring.ai.vectorstore.redis.index-name`, 기본 `document-index`)를 재사용한다.
+
+#### 주의 사항
+
+lexical `FT.SEARCH`는 벡터 스키마가 구성된 인덱스 위에서 동작한다. 따라서 최초 1회는 `spring.ai.vectorstore.redis.initialize-schema: true`로 실행해 스키마·인덱스를 생성한 뒤(이후 `false`) 하이브리드를 활성화하는 것을 권장한다. 인덱스가 없거나 `FT.SEARCH`가 실패하면 예외를 잡아 해당 요청은 dense 결과만 반환하므로(graceful fallback) 검색이 중단되지는 않지만, 그 요청에서 lexical 채널은 무력화된다.
+
+### PII 마스킹 (색인 단계 민감정보 치환)
+
+RAG 색인 파이프라인은 원문을 벡터 저장소에 적재하므로, 원문의 주민등록번호·카드번호 등 고위험 식별자가 색인·검색 응답에 그대로 노출될 수 있다. `EgovPiiMaskingTransformer`는 색인 저장 직전에 이러한 식별자만 선택적으로 토큰으로 치환한다. 기본값은 off이며, 켜야만 동작한다.
+
+```yaml
+spring:
+  ai:
+    document:
+      pii-masking:
+        enabled: true          # 마스킹 활성화 (기본 false)
+        mask-rrn: true         # 주민등록번호 (검증자리 통과분만)
+        mask-card: true        # 카드번호 (Luhn 검사 통과분만)
+        mask-secret: true      # 인증키/비밀키 key=value 값
+        account-regex: ""      # 계좌번호 정규식 (미지정 시 비활성)
+```
+
+#### 대상과 오탐 억제
+
+- **주민등록번호**: 형태(생년월일 6 + 성별 1 + 6자리)뿐 아니라 **검증자리(체크섬)** 까지 통과한 값만 치환한다. 형태만 같은 관리코드·기안번호 등의 오탐을 줄인다. (2020년 10월 이후 무작위 외국인등록번호는 검증을 따르지 않아 치환되지 않을 수 있다.)
+- **카드번호**: 13~19자리 후보 중 **Luhn 검사**를 통과한 값만 치환한다. 단, 주민등록번호 형태(6-7자리)인 13자리 숫자는 카드로 재분류하지 않는다(검증자리를 통과하지 못한 관리코드가 카드로 오탐되는 것을 막기 위함). 이로 인해 드물게 주민번호 형태로 표기된 13자리 카드번호는 치환 대상에서 제외될 수 있다.
+- **인증키/비밀키**: `api_key`, `secret`, `password`, `token` 등 키워드 뒤 `key=value`·`key: value` 형태의 값만 치환하고 키 이름은 보존한다. 값에 한글이 있거나, 6자 미만이거나, 숫자·기호 없이 순수 영문 단어이면 자격증명으로 보지 않아 치환하지 않는다. 예) `"password: 대소문자를 포함해 설정"`, `"token: JWT 형식으로 발급"`, `"token: production 환경"`은 마스킹되지 않는다.
+- **계좌번호**: 기관별 형식이 제각각이라 내장 패턴의 오탐이 크므로, 운영자가 `account-regex`를 지정한 경우에만 동작한다.
+
+#### 마스킹하지 않는 항목 (검색 품질 보존)
+
+전화번호·이메일·담당자명·주소는 업무 검색에 필요할 수 있어 일괄 마스킹하지 않는다. 유출 위험이 크고 검색 기여가 낮은 항목만 선별해 치환한다.
 
 ## 문제 해결
 
@@ -531,6 +606,7 @@ image: <레지스트리>/spring-ai-rag-redis:1.0.0
 | `SPRING_DATA_REDIS_PORT` | `spring.data.redis.port` | `6379` | Redis 연결 포트 |
 | `SPRING_AI_DOCUMENT_PATH` | `spring.ai.document.path` | `file:/workspace/data/**/*.md` | 문서 경로 (글로브 패턴) |
 | `SPRING_AI_DOCUMENT_PDF_PATH` | `spring.ai.document.pdf-path` | `file:/workspace/data/**/*.pdf` | PDF 문서 경로 |
+| `SPRING_AI_DOCUMENT_HWPX_PATH` | `spring.ai.document.hwpx-path` | (미설정 시 HWPX 건너뜀) | HWPX 문서 경로 |
 | `EMBEDDING_MODEL_PATH` | `spring.ai.embedding.transformer.onnx.modelUri` 내 치환 | `/models/spring-ai-Config/model/model.onnx` | ONNX 모델 경로 (PVC) |
 | `EMBEDDING_TOKENIZER_PATH` | `spring.ai.embedding.transformer.tokenizer.uri` 내 치환 | `/models/spring-ai-Config/model/tokenizer.json` | 토크나이저 경로 (PVC) |
 | `MANAGEMENT_HEALTH_PROBES_ENABLED` | `management.health.probes.enabled` | `true` | K8s readiness/liveness probe 활성화 |

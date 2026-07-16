@@ -1,6 +1,12 @@
 -- PGVector 확장 설치
 CREATE EXTENSION IF NOT EXISTS vector;
 
+-- 하이브리드 lexical 검색용 pg_trgm 확장 설치
+-- 컨테이너 초기화 시점에 슈퍼유저로 설치하므로, 애플리케이션 계정에 CREATE EXTENSION
+-- 권한(슈퍼유저)을 부여할 필요가 없다. GIN trigram 인덱스는 document_embeddings 테이블이
+-- 애플리케이션 기동 후 생성되므로 EgovHybridIndexInitializer에서 계속 담당한다.
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
 -- 문서 해시 저장 테이블 (변경 감지용)
 CREATE TABLE IF NOT EXISTS document_hashes (
     doc_id VARCHAR(500) PRIMARY KEY,

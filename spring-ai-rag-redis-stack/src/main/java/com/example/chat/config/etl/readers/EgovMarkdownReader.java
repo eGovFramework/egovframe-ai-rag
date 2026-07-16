@@ -82,12 +82,15 @@ public class EgovMarkdownReader implements DocumentReader {
     private Map<String, Object> createEnhancedMetadata(String filename, String content) {
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("source", filename);
+        // PDF·HWP·HWPX 리더와 동일하게 file_name을 남긴다(출처 표기 시 리더 간 메타데이터 정합).
+        metadata.put("file_name", filename);
         metadata.put("type", "markdown");
         metadata.put("content_length", content.length());
-        metadata.put("has_headers", content.matches(".*#{1,6}\\s.*"));
+        // (?s) DOTALL: 여러 줄 마크다운에서도 '.'이 줄바꿈을 포함해 전체 매칭되도록 한다
+        metadata.put("has_headers", content.matches("(?s).*#{1,6}\\s.*"));
         metadata.put("has_code_blocks", content.contains("```"));
-        metadata.put("has_links", content.matches(".*\\[.*\\]\\(.*\\).*"));
-        metadata.put("has_images", content.matches(".*!\\[.*\\]\\(.*\\).*"));
+        metadata.put("has_links", content.matches("(?s).*\\[.*\\]\\(.*\\).*"));
+        metadata.put("has_images", content.matches("(?s).*!\\[.*\\]\\(.*\\).*"));
         metadata.put("line_count", content.split("\n").length);
         
         return metadata;
