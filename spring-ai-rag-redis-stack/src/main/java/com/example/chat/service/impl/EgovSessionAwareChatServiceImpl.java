@@ -21,6 +21,7 @@ import com.example.chat.context.SessionContext;
 import com.example.chat.config.EgovHybridDocumentRetriever;
 import com.example.chat.config.EgovRagConfig;
 import com.example.chat.config.rag.transformers.EgovCompressionQueryTransformer;
+import com.example.chat.guard.EgovInjectionGuard;
 import org.springframework.ai.rag.retrieval.search.DocumentRetriever;
 import org.springframework.ai.rag.retrieval.search.VectorStoreDocumentRetriever;
 import org.springframework.beans.factory.ObjectProvider;
@@ -38,11 +39,14 @@ import reactor.core.publisher.Flux;
 @RequiredArgsConstructor
 public class EgovSessionAwareChatServiceImpl extends EgovAbstractServiceImpl implements EgovSessionAwareChatService {
 
+    private static final String GUIDANCE_MESSAGE = "요청을 처리할 수 없습니다. 표준프레임워크 관련 질문을 입력해 주세요.";
+
     private final ChatClient ollamaChatClient;
     private final MessageChatMemoryAdvisor messageChatMemoryAdvisor;
     private final EgovCompressionQueryTransformer compressionTransformer;
     private final VectorStoreDocumentRetriever vectorStoreDocumentRetriever;
     private final EgovAiFallbackHandler fallbackHandler;
+    private final EgovInjectionGuard injectionGuard;
     /**
      * 하이브리드(dense+lexical RRF) DocumentRetriever. {@code rag.retrieval.hybrid.enabled=true}
      * 일 때만 빈이 등록되므로 ObjectProvider로 선택적으로 주입한다. 없으면 dense로 폴백한다.
@@ -67,6 +71,16 @@ public class EgovSessionAwareChatServiceImpl extends EgovAbstractServiceImpl imp
         try {
             log.debug("세션 {} RAG 응답 생성 시작", sessionId);
             validateSessionId(sessionId);
+
+            EgovInjectionGuard.GuardDecision decision = injectionGuard.inspect(query);
+            if (decision.matched()) {
+                log.warn("프롬프트 인젝션 의심 질의 - 세션: {}, 정책: {}, 패턴: {}", sessionId,
+                        decision.policy(), decision.matchedPattern());
+            }
+            if (!decision.allowed()) {
+                return Flux.just(new ChatResponse(
+                        List.of(new Generation(new AssistantMessage(GUIDANCE_MESSAGE)))));
+            }
 
             // 원본 질문으로 ChatClientRequestSpec 생성 (사용자 메시지로 저장)
             ChatClientRequestSpec requestSpec = createRequestSpec(query, model);
@@ -113,6 +127,16 @@ public class EgovSessionAwareChatServiceImpl extends EgovAbstractServiceImpl imp
         try {
             log.debug("세션 {} 일반 응답 생성 시작", sessionId);
 
+            EgovInjectionGuard.GuardDecision decision = injectionGuard.inspect(query);
+            if (decision.matched()) {
+                log.warn("프롬프트 인젝션 의심 질의 - 세션: {}, 정책: {}, 패턴: {}", sessionId,
+                        decision.policy(), decision.matchedPattern());
+            }
+            if (!decision.allowed()) {
+                return Flux.just(new ChatResponse(
+                        List.of(new Generation(new AssistantMessage(GUIDANCE_MESSAGE)))));
+            }
+
             // 원본 질문으로 ChatClientRequestSpec 생성 (RAG 없으므로 압축 불필요)
             ChatClientRequestSpec requestSpec = createRequestSpec(query, model);
 
@@ -147,6 +171,15 @@ public class EgovSessionAwareChatServiceImpl extends EgovAbstractServiceImpl imp
         log.info("기술 정보 JSON 응답 생성: {}", query);
 
         try {
+            EgovInjectionGuard.GuardDecision decision = injectionGuard.inspect(query);
+            if (decision.matched()) {
+                log.warn("프롬프트 인젝션 의심 질의 - 정책: {}, 패턴: {}",
+                        decision.policy(), decision.matchedPattern());
+            }
+            if (!decision.allowed()) {
+                return new TechnologyResponse("차단됨", "차단됨", GUIDANCE_MESSAGE, null, null);
+            }
+
             // 커스텀 StructuredOutputConverter 사용하여 <think> 태그 처리
             return ollamaChatClient.prompt()
                     .user(u -> u.text("다음 질문에 대해 기술 정보를 제공해주세요: {query}")
