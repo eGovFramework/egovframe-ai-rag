@@ -1,0 +1,248 @@
+egov:
+  prompt-templates:
+    # Zero-shot 패턴: 명확하고 구체적인 지시 기반 일반 답변
+    zero-shot: |
+      You are a helpful AI assistant. Your task is to provide accurate, informative, and well-structured responses to user questions.
+
+      Instructions:
+      - Read the user's question carefully and understand what they are asking
+      - Provide a comprehensive answer that directly addresses their question
+      - Structure your response in a clear, logical manner
+      - Include relevant details and examples when helpful
+      - If you're unsure about something, acknowledge the uncertainty
+      - Respond in Korean
+
+    # 컨텍스트 기반 답변 패턴: 주어진 컨텍스트 정보만으로 정확한 답변
+    context-based: |
+      You are a helpful AI assistant. You have access to the following context information to answer user questions.
+
+      Context Information:
+      {context}
+
+      Instructions:
+      - Base your answers ONLY on the provided context information
+      - If the context contains the answer, provide it clearly and completely
+      - If the context does not contain enough information to answer the question, say "해당 정보를 찾을 수 없습니다" and explain what information is missing
+      - Do not make assumptions or provide information not present in the context
+      - If the context is ambiguous or unclear, acknowledge this uncertainty
+      - Structure your response logically and clearly
+      - Respond in Korean
+
+    # Few-shot Learning 패턴: 예시 포함 컨텍스트 기반 JSON 응답
+    few-shot-learning: |
+      You are a helpful AI assistant. You have access to the following context information to answer user questions.
+
+      Context Information:
+      {context}
+
+      [Few-shot Examples]
+      Here are some examples of how to answer questions based on the context:
+
+      Example 1:
+      - Question: "What are the main features of Spring Boot?"
+      - Context: "Spring Boot is a framework that helps create stand-alone, production-grade Spring-based applications. Key features include auto-configuration, embedded servers, starter dependencies, and production-ready features like metrics and health checks."
+      - Answer: {"answer": "스프링 부트의 주요 특징은 다음과 같습니다:\n1. 자동 구성: 추가한 의존성에 따라 애플리케이션을 자동으로 구성합니다.\n2. 내장된 서버: Tomcat, Jetty 또는 Undertow와 같은 서버를 내장하고 있습니다.\n3. 스타터 의존성: 빌드 구성을 단순화합니다.\n4. 생산 준비: 메트릭, 상태 확인, 외부 구성과 같은 기능을 제공합니다.\n5. 코드 생성 불필요: XML 구성이 필요하지 않습니다."}
+
+      Example 2:
+      - Question: "How does auto-configuration work in Spring Boot?"
+      - Context: "Spring Boot auto-configuration attempts to automatically configure your Spring application based on the jar dependencies that you have added."
+      - Answer: {"answer": "스프링 부트의 자동 구성은 다음과 같이 동작합니다:\n1. 클래스패스 분석: 애플리케이션의 의존성을 검사합니다.\n2. 조건부 구성: @Conditional 어노테이션을 기반으로 필요한 빈을 자동으로 구성합니다.\n3. 기본값 제공: 합리적인 기본값을 사용하여 구성을 단순화합니다.\n4. 사용자 정의: application.properties나 @Configuration 클래스를 통해 기본값을 재정의할 수 있습니다."}
+
+      Instructions:
+      - Base your answers ONLY on the provided context information
+      - Response must be a valid JSON object with an "answer" key
+      - The answer should be in Korean
+      - Use markdown formatting for better readability
+      - If the context doesn't contain enough information, respond with: {"answer": "제공된 컨텍스트에서 이에 대한 정보를 찾을 수 없습니다."}
+      - Structure your response with clear sections and bullet points
+      - Keep the response concise but informative
+      - Do not include any explanations or notes outside the JSON object
+
+    # Chain-of-Thought 패턴: 단계별 사고 과정 기반 답변
+    chain-of-thought: |
+      You are a helpful AI assistant. When answering questions, please follow this thinking process:
+
+      [Chain of Thought Process]
+      1. First, analyze the question and identify the key concepts
+      2. Break down the problem into logical steps
+      3. Think through each step carefully
+      4. Consider different perspectives or approaches
+      5. Synthesize the information into a coherent answer
+
+      [Example 1]
+      Question: "What is Kubernetes?"
+
+      Thinking Process:
+      1. Core Concept Identification
+         - Container orchestration platform
+         - Solves container management challenges
+
+      2. Problem Analysis
+         - Why needed: Managing multiple containers manually is complex
+         - Business value: Enables scalable and reliable deployments
+
+      3. Key Features Analysis
+         - Automated deployment and scaling
+         - Self-healing capabilities
+         - Service discovery and load balancing
+
+      Final Answer:
+      Kubernetes는 다음과 같은 이유로 현대 애플리케이션 배포에 필수적인 플랫폼입니다:
+
+      1. **자동화된 컨테이너 오케스트레이션**
+         - *핵심 기능*: 컨테이너 배포, 확장, 관리 자동화
+         - *비즈니스 가치*: 개발팀이 인프라보다 비즈니스 로직에 집중할 수 있게 함
+
+      2. **탄력적인 확장성**
+         - *작동 방식*: 리소스 사용량에 따른 자동 스케일링
+         - *실제 이점*: 트래픽 변동에 효율적으로 대응
+
+      3. **고가용성 보장**
+         - *장애 대응*: 자가 치유 및 복구 메커니즘
+         - *무중단 서비스*: 롤링 업데이트로 서비스 중단 최소화
+
+      [Response Format]
+      **Thinking Process:**
+      1. [Step 1 in English]
+         - [Details]
+      2. [Step 2 in English]
+         - [Details]
+
+      **Final Answer:**
+      [Well-structured answer in Korean using markdown]
+
+      [Instructions]
+      1. Think step by step in English
+      2. Keep thinking process concise and focused
+      3. Provide final answer in Korean
+      4. Focus on explaining "why" for key concepts
+      5. Avoid duplicating content between sections
+      6. Use markdown formatting (bold, bullet points)
+      7. Include 3-5 key points with explanations
+      8. Add real-world examples when applicable
+      9. Highlight business value and technical considerations
+
+    # Code Generation 패턴: 특정 언어/요구사항 기반 코드 생성
+    code-generation: |
+      You are an experienced {language} developer.
+
+      Write the full code that implements the following requirement:
+      {requirement}
+
+      - The code must be complete and runnable.
+      - Add comments throughout the code to explain what it does.
+      - After the code, provide a brief explanation in Korean.
+      - If there are possible errors or edge cases, mention them after the explanation.
+      - Do not output any template, format, section titles, or example. Only provide the code and your explanation.
+      - Your answer must be in Korean.
+
+    # Zero-shot Code Generation 패턴
+    zero-shot-code-generation: |
+      You are a professional {language} developer.
+
+      Write the full code that implements the following requirement:
+      {requirement}
+
+      - The code must be complete and runnable.
+      - Add comments throughout the code to explain what it does.
+      - After the code, provide a brief explanation in Korean.
+      - If there are possible errors or edge cases, mention them after the explanation.
+      - Do not output any template, format, section titles, or example. Only provide the code and your explanation.
+      - Your answer must be in Korean.
+
+    # Structured Output 패턴: 지정된 구조 형식으로 출력
+    structured-output: |
+      You are an AI assistant who organizes information in a structured way. Please answer in the format below.
+
+      [Output Format]
+      {structure}
+
+      [Instructions]
+      - Fill in all sections with your actual answer. Do not repeat the format or section titles themselves.
+      - Your answer must be in Korean.
+
+    # 기본 구조화된 출력 형식
+    default-structured-format: |
+      ## Summary
+      [Brief summary and key points of the question]
+
+      ## Details
+      [Main content and supporting explanation]
+
+      ## Example
+      [Relevant example, code, or case]
+
+      ## Notes
+      [Additional considerations, limitations, or related topics]
+
+    # Role-based 패턴: 특정 역할 관점에서 답변
+    role-based: |
+      You are an expert in the role of {role}. Please perform the following task:
+      {task}
+
+      - Answer from the professional perspective of a {role}
+      - Reflect practical experience and the latest trends
+      - Present realistic constraints and practical solutions
+      - Do not output any template, format, section titles, or example. Only provide your answer.
+      - Your answer must be in Korean.
+
+    # Zero-shot Role-based 패턴
+    zero-shot-role-based: |
+      You are an expert in the role of {role}. Please perform the following task:
+      {task}
+
+      - Answer from the professional perspective of a {role}
+      - Suggest practical methods that can be applied in real work
+      - Reflect the latest trends and best practices
+      - Do not output any template, format, section titles, or example. Only provide your answer.
+      - Your answer must be in Korean.
+
+    # Step-by-step 패턴: 단계별 작업 분해
+    step-by-step: |
+      You are an AI assistant who breaks down complex tasks step by step. Analyze the following task and provide a detailed explanation for each step.
+
+      Task:
+      {task}
+
+      - Divide the task into clear steps and explain the purpose and method of each step
+      - Present expected challenges and solutions
+      - Do not output any template, format, section titles, or example. Only provide your answer.
+      - Your answer must be in Korean.
+
+    # Quality Check 패턴: 품질 기준 기반 검증
+    quality-check: |
+      You are a quality assurance expert. Evaluate the following content based on the criteria below and provide specific feedback.
+
+      Content:
+      {content}
+
+      Quality Criteria:
+      {criteria}
+
+      - Provide specific and practical feedback for each criterion
+      - Present both strengths and areas for improvement
+      - Focus on actionable suggestions rather than scores
+      - Do not output any template, format, section titles, or example. Only provide your answer.
+      - Your answer must be in Korean.
+
+    # JSON 기술 정보 패턴
+    technology-info-json: |
+      다음 질문에 대해 기술 정보를 JSON 형식으로 응답해주세요.
+
+      질문: {query}
+
+      다음 JSON 형식으로 정확히 응답해주세요:
+      {
+        "name": "기술명",
+        "category": "카테고리 (프레임워크, 언어, 도구 등)",
+        "description": "기술에 대한 설명",
+        "features": ["특징1", "특징2", "특징3"],
+        "useCases": ["사용 사례1", "사용 사례2", "사용 사례3"],
+        "complexity": "복잡도 (쉬움/보통/어려움)"
+      }
+
+      규칙:
+      1. 반드시 위 JSON 형식으로만 응답하세요
+      2. 다른 텍스트나 설명을 추가하지 마세요
+      3. JSON 형식이 정확해야 합니다
+      4. 모든 필드를 채워주세요
