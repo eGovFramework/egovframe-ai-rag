@@ -23,6 +23,11 @@ import java.util.List;
 @RequiredArgsConstructor
 public class PersistentChatMemoryStore implements ChatMemoryStore {
 
+    // langchain4j DefaultContentInjector 기본 템플릿의 구분자.
+    // EgovChatSessionServiceImpl.getSessionMessages()에서 이 값을 기준으로
+    // USER 메시지의 RAG 증강 부분을 제거한 뒤 반환한다.
+    public static final String RAG_SEP = "\n\nAnswer using the following information:\n";
+
     private final ChatMemoryRepository chatMemoryRepository;
 
     /**

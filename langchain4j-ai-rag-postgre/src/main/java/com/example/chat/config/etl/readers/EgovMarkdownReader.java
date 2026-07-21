@@ -85,12 +85,15 @@ public class EgovMarkdownReader {
 
         Metadata metadata = Metadata.from("id", docId);
         metadata.put("source", filename);
+        // PDF·HWP·HWPX 리더와 동일하게 file_name을 남긴다(출처 표기 시 리더 간 메타데이터 정합).
+        metadata.put("file_name", filename);
         metadata.put("type", "markdown");
         metadata.put("content_length", String.valueOf(content.length()));
-        metadata.put("has_headers", String.valueOf(content.matches(".*#{1,6}\\s.*")));
+        // (?s) DOTALL: 여러 줄 마크다운에서도 '.'이 줄바꿈을 포함해 전체 매칭되도록 한다
+        metadata.put("has_headers", String.valueOf(content.matches("(?s).*#{1,6}\\s.*")));
         metadata.put("has_code_blocks", String.valueOf(content.contains("```")));
-        metadata.put("has_links", String.valueOf(content.matches(".*\\[.*\\]\\(.*\\).*")));
-        metadata.put("has_images", String.valueOf(content.matches(".*!\\[.*\\]\\(.*\\).*")));
+        metadata.put("has_links", String.valueOf(content.matches("(?s).*\\[.*\\]\\(.*\\).*")));
+        metadata.put("has_images", String.valueOf(content.matches("(?s).*!\\[.*\\]\\(.*\\).*")));
         metadata.put("line_count", String.valueOf(content.split("\n").length));
         return metadata;
     }

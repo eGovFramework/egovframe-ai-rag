@@ -41,7 +41,9 @@ spring:
     document:
       path: file:C:/workspace-test/upload/data/**/*.md
       pdf-path: file:C:/workspace-test/upload/data/**/*.pdf
+      docx-path: file:C:/workspace-test/upload/data/**/*.docx
       # hwp-path: file:C:/workspace-test/upload/data/**/*.hwp
+      # hwpx-path: file:C:/workspace-test/upload/data/**/*.hwpx
 
       # PDF 리더 설정
       pdf:
@@ -84,6 +86,24 @@ spring:
         # 특수문자 정리 여부
         clean-special-chars: true
 
+      # 민감정보(PII) 마스킹 설정 (색인 저장 단계 보호)
+      pii-masking:
+        # 마스킹 활성화 여부 (기본 비활성 — 필요 시에만 켠다)
+        enabled: false
+        # 주민등록번호/외국인등록번호 마스킹 여부
+        mask-rrn: true
+        # 카드번호 마스킹 여부 (Luhn 검사를 통과한 번호만 치환)
+        mask-card: true
+        # 인증키/비밀키(key=value) 값 마스킹 여부
+        mask-secret: true
+        # 치환 토큰
+        rrn-token: "[RRN]"
+        card-token: "[CARD]"
+        secret-token: "[SECRET]"
+        account-token: "[ACCOUNT]"
+        # 계좌번호 정규식 (기관별 형식이 달라 오탐이 크므로 기본 미지정 = 비활성)
+        account-regex: ""
+
   # Redis 연결 설정
   data:
     redis:
@@ -118,6 +138,24 @@ rag:
 
   # RAG 검색 결과 개수 (Top K)
   top-k: 3
+
+  guard:
+    enabled: false        # 기본 OFF → 기존 동작 완전 보존
+    policy: log           # log | block
+    lexicon-path:         # (옵션) 운영자 확장 렉시콘 외부경로. 미설정 시 시드만
+
+  # 하이브리드 검색(dense 벡터 + lexical RediSearch FT.SEARCH) 설정
+  # enabled:true 일 때만 lexical 채널(JedisPooled)·하이브리드 retriever 빈이 등록된다.
+  # off(기본)에서는 기존 dense 단독 검색이 그대로 동작한다(빈 모호성 없음).
+  retrieval:
+    hybrid:
+      enabled: false
+      # RRF 채널 가중치(기본 1.0). lexical을 높이면 키워드 일치 문서가 상위로 올라온다.
+      weight:
+        dense: 1.0
+        lexical: 1.0
+      # 하이브리드 결과 개수. 미지정 시 rag.top-k 를 따른다.
+      # top-k: 3
 
 # 채팅 메모리 설정 (기본값: 20)
 chat:

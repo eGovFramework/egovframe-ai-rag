@@ -78,6 +78,14 @@ rag:
   similarity:
     threshold: 0.70
   top-k: 3
+  # 하이브리드 검색 (테스트 기본 off)
+  retrieval:
+    hybrid:
+      enabled: false
+      weight:
+        dense: 1.0
+        lexical: 1.0
+      top-k: 3
 
 # 채팅 메모리 설정
 chat:

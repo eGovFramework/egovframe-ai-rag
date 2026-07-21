@@ -1,6 +1,8 @@
 package com.example.chat.service.impl;
 
+import com.example.chat.config.etl.readers.EgovDocxReader;
 import com.example.chat.config.etl.readers.EgovHwpReader;
+import com.example.chat.config.etl.readers.EgovHwpxReader;
 import com.example.chat.config.etl.readers.EgovMarkdownReader;
 import com.example.chat.config.etl.readers.EgovPdfReader;
 import com.example.chat.config.etl.transformers.EgovContentFormatTransformer;
@@ -40,7 +42,9 @@ public class EgovDocumentServiceImpl extends EgovAbstractServiceImpl implements 
     // ETL 파이프라인 컴포넌트들
     private final EgovMarkdownReader egovMarkdownReader;
     private final EgovPdfReader egovPdfReader;
+    private final EgovDocxReader egovDocxReader;
     private final EgovHwpReader egovHwpReader;
+    private final EgovHwpxReader egovHwpxReader;
     private final EgovContentFormatTransformer egovContentFormatTransformer;
     private final EgovEnhancedDocumentTransformer egovEnhancedDocumentTransformer;
     private final EgovVectorStoreWriter egovVectorStoreWriter;
@@ -79,32 +83,36 @@ public class EgovDocumentServiceImpl extends EgovAbstractServiceImpl implements 
 
     @Override
     public CompletableFuture<Integer> loadDocumentsAsync() {
-        if (isProcessing.get()) {
+        // 검사·설정을 단일 원자 연산으로 처리하여 동시 진입(TOCTOU)을 차단한다.
+        if (!isProcessing.compareAndSet(false, true)) {
             log.warn("이미 문서 처리가 진행 중입니다.");
             return CompletableFuture.completedFuture(0);
         }
 
         log.info("LangChain4j ETL 파이프라인으로 문서 처리 시작");
-        isProcessing.set(true);
         processedCount.set(0);
         totalCount.set(0);
         changedCount.set(0);
 
         return CompletableFuture.supplyAsync(() -> {
             try {
-                // 1단계: 마크다운, PDF, HWP 문서 읽기
+                // 1단계: 마크다운, PDF, DOCX, HWP, HWPX 문서 읽기
                 List<Document> markdownDocuments = egovMarkdownReader.read();
                 List<Document> pdfDocuments = egovPdfReader.read();
+                List<Document> docxDocuments = egovDocxReader.read();
                 List<Document> hwpDocuments = egovHwpReader.read();
+                List<Document> hwpxDocuments = egovHwpxReader.read();
 
                 List<Document> allDocuments = new ArrayList<>();
                 allDocuments.addAll(markdownDocuments);
                 allDocuments.addAll(pdfDocuments);
+                allDocuments.addAll(docxDocuments);
                 allDocuments.addAll(hwpDocuments);
+                allDocuments.addAll(hwpxDocuments);
 
                 totalCount.set(allDocuments.size());
-                log.info("총 {}개의 문서를 로드했습니다. (마크다운: {}개, PDF: {}개, HWP: {}개)",
-                        allDocuments.size(), markdownDocuments.size(), pdfDocuments.size(), hwpDocuments.size());
+                log.info("총 {}개의 문서를 로드했습니다. (마크다운: {}개, PDF: {}개, DOCX: {}개, HWP: {}개, HWPX: {}개)",
+                        allDocuments.size(), markdownDocuments.size(), pdfDocuments.size(), docxDocuments.size(), hwpDocuments.size(), hwpxDocuments.size());
 
                 // 2단계: 변경된 문서 필터링
                 List<Document> changedDocuments = filterChangedDocuments(allDocuments);

@@ -1,10 +1,10 @@
 package com.example.chat.config.etl.readers;
 
 import dev.langchain4j.data.document.Document;
-import dev.langchain4j.data.document.DocumentParser;
 import dev.langchain4j.data.document.Metadata;
-import dev.langchain4j.data.document.parser.apache.pdfbox.ApachePdfBoxDocumentParser;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.text.PDFTextStripper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
@@ -17,7 +17,7 @@ import java.util.List;
 
 /**
  * PDF 문서 로더
- * LangChain4j의 ApachePdfBoxDocumentParser 사용
+ * PDFBox로 페이지 단위 파싱하여 각 페이지에 실제 페이지 번호(page_number)를 부여한다.
  */
 @Slf4j
 @Component
@@ -25,8 +25,6 @@ public class EgovPdfReader {
 
     @Value("${document.pdf-path}")
     private String pdfDocumentPath;
-
-    private final DocumentParser pdfParser = new ApachePdfBoxDocumentParser();
 
     /**
      * PDF 문서 로드
@@ -73,40 +71,51 @@ public class EgovPdfReader {
     }
 
     /**
-     * PDF 파일을 파싱하고 페이지별로 문서 생성
+     * PDF 파일을 페이지 단위로 파싱해 페이지당 하나의 문서를 생성한다.
+     *
+     * <p>PDFBox {@link PDFTextStripper}로 페이지별 텍스트를 추출하고, 각 문서에 실제 페이지
+     * 번호({@code page_number})를 부여한다(출처 인용에 필요). 텍스트가 비어 있는 페이지(스캔
+     * 이미지 등)는 색인에서 건너뛴다. 페이지 내 청킹은 {@code EgovEnhancedDocumentTransformer}가
+     * 담당하며, 페이지 단위로 문서가 나뉘므로 청크가 페이지 경계를 넘지 않는다.</p>
      */
-    private List<Document> parsePdfDocument(Resource resource) throws IOException {
+    List<Document> parsePdfDocument(Resource resource) throws IOException {
         String filename = resource.getFilename();
         if (filename == null) {
             filename = "unknown.pdf";
         }
+        String baseFilename = filename.replaceAll("\\.pdf$", "");
+        String safeFilename = baseFilename.replaceAll("[\\/:*?\"<>|]", "").replaceAll("\\s+", "-");
 
         List<Document> documents = new ArrayList<>();
 
-        try (InputStream inputStream = resource.getInputStream()) {
-            // LangChain4j의 PDFBox 파서로 전체 PDF 파싱
-            Document fullDocument = pdfParser.parse(inputStream);
+        try (InputStream inputStream = resource.getInputStream();
+             PDDocument pdf = PDDocument.load(inputStream)) {
 
-            String content = fullDocument.text();
+            int pageCount = pdf.getNumberOfPages();
+            PDFTextStripper stripper = new PDFTextStripper();
 
-            // 페이지별 분할은 생략하고 전체 문서를 하나로 처리
-            // Spring AI의 pagesPerDocument 속성 사용 불가
-            // document 객체의 분할은 EnhancedDocumentTransformer 클래스에서 처리
-            String baseFilename = filename.replaceAll("\\.pdf$", "");
-            String safeFilename = baseFilename.replaceAll("[\\/:*?\"<>|]", "")
-                    .replaceAll("\\s+", "-");
-            String customId = String.format("pdf-%s_1", safeFilename);
+            for (int page = 1; page <= pageCount; page++) {
+                stripper.setStartPage(page);
+                stripper.setEndPage(page);
+                String content = stripper.getText(pdf);
 
-            Metadata metadata = Metadata.from("id", customId);
-            metadata.put("file_name", filename);
-            metadata.put("source", filename);
-            metadata.put("type", "pdf");
-            metadata.put("content_length", String.valueOf(content.length()));
-            metadata.put("page_number", "1");
+                if (content == null || content.isBlank()) {
+                    log.debug("PDF '{}' {}페이지: 빈 내용으로 건너뜀", filename, page);
+                    continue;
+                }
 
-            log.debug("PDF Document ID: {} (길이: {})", customId, content.length());
+                String customId = String.format("pdf-%s_%d", safeFilename, page);
+                Metadata metadata = Metadata.from("id", customId);
+                metadata.put("file_name", filename);
+                metadata.put("source", filename);
+                metadata.put("type", "pdf");
+                metadata.put("content_length", String.valueOf(content.length()));
+                metadata.put("page_number", String.valueOf(page));
 
-            documents.add(Document.from(content, metadata));
+                documents.add(Document.from(content, metadata));
+            }
+
+            log.debug("PDF '{}': {}페이지 중 {}개 문서 생성", filename, pageCount, documents.size());
         }
 
         return documents;
