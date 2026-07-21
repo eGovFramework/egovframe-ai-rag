@@ -3,6 +3,7 @@ package com.example.chat.service.impl;
 import java.util.List;
 
 import org.egovframe.rte.fdl.cmmn.EgovAbstractServiceImpl;
+
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.ChatClient.ChatClientRequestSpec;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
@@ -25,6 +26,7 @@ import org.springframework.ai.rag.retrieval.search.DocumentRetriever;
 import org.springframework.ai.rag.retrieval.search.VectorStoreDocumentRetriever;
 import org.springframework.beans.factory.ObjectProvider;
 import com.example.chat.response.TechnologyResponse;
+import com.example.chat.service.EgovAiFallbackHandler;
 import com.example.chat.service.EgovSessionAwareChatService;
 import com.example.chat.util.EgovThinkTagOutputConverter;
 
@@ -43,6 +45,7 @@ public class EgovSessionAwareChatServiceImpl extends EgovAbstractServiceImpl imp
     private final MessageChatMemoryAdvisor messageChatMemoryAdvisor;
     private final EgovCompressionQueryTransformer compressionTransformer;
     private final VectorStoreDocumentRetriever vectorStoreDocumentRetriever;
+    private final EgovAiFallbackHandler fallbackHandler;
     private final EgovInjectionGuard injectionGuard;
     /**
      * 하이브리드(dense+lexical RRF) DocumentRetriever. {@code rag.retrieval.hybrid.enabled=true}
@@ -99,11 +102,17 @@ public class EgovSessionAwareChatServiceImpl extends EgovAbstractServiceImpl imp
                     .advisors(messageChatMemoryAdvisor, ragAdvisor)
                     .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, sessionId))
                     .stream()
-                    .chatResponse();
+                    .chatResponse()
+                    .onErrorResume(e -> {
+                        log.error("RAG 스트리밍 중 오류 발생 - 세션: {}", sessionId, e);
+                        String fallbackMessage = fallbackHandler.getFallbackMessage(e);
+                        return Flux.just(new ChatResponse(List.of(new Generation(new AssistantMessage(fallbackMessage)))));
+                    });
 
         } catch (Exception e) {
             log.error("세션별 RAG 스트리밍 응답 생성 중 오류 발생 - 세션: {}", sessionId, e);
-            return Flux.error(e);
+            String fallbackMessage = fallbackHandler.getFallbackMessage(e);
+            return Flux.just(new ChatResponse(List.of(new Generation(new AssistantMessage(fallbackMessage)))));
         }
     }
 
@@ -137,11 +146,17 @@ public class EgovSessionAwareChatServiceImpl extends EgovAbstractServiceImpl imp
                     .advisors(messageChatMemoryAdvisor)
                     .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, sessionId))
                     .stream()
-                    .chatResponse();
+                    .chatResponse()
+                    .onErrorResume(e -> {
+                        log.error("일반 스트리밍 중 오류 발생 - 세션: {}", sessionId, e);
+                        String fallbackMessage = fallbackHandler.getFallbackMessage(e);
+                        return Flux.just(new ChatResponse(List.of(new Generation(new AssistantMessage(fallbackMessage)))));
+                    });
 
         } catch (Exception e) {
             log.error("세션별 일반 스트리밍 응답 생성 중 오류 발생 - 세션: {}", sessionId, e);
-            return Flux.error(e);
+            String fallbackMessage = fallbackHandler.getFallbackMessage(e);
+            return Flux.just(new ChatResponse(List.of(new Generation(new AssistantMessage(fallbackMessage)))));
         }
     }
 
