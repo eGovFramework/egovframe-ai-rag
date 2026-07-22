@@ -350,7 +350,7 @@
             <h3>관리자 기능</h3>
             <button class="admin-button" id="reindex-btn" onclick="reindexDocuments()">문서 재인덱싱</button>
             <!-- 파일 업로드 UI -->
-            <input type="file" id="upload-input" accept=".md" multiple style="display:none" onchange="handleFileSelect(event)">
+            <input type="file" id="upload-input" accept=".md,.hwp,.hwpx" multiple style="display:none" onchange="handleFileSelect(event)">
             <button class="admin-button" id="upload-btn" onclick="document.getElementById('upload-input').click()">문서 업로드</button>
             <span id="upload-status" style="font-size:12px; color:#bdc3c7; margin-top:5px; display:block;"></span>
             <!-- <button id="testAsyncBtn" onclick="testAsync()">비동기 테스트</button> -->
@@ -390,7 +390,7 @@
             <div class="message ai-message">
                 <strong>Spring AI RAG 채팅에 오신 것을 환영합니다!</strong><br><br>
                 <strong>문서가 없는 경우:</strong><br>
-                • "문서 업로드" 버튼을 클릭하여 마크다운(.md) 파일을 업로드하세요<br>
+                • "문서 업로드" 버튼을 클릭하여 문서 파일(.md, .hwp, .hwpx)을 업로드하세요<br>
                 • 또는 "문서 재인덱싱" 버튼을 클릭하여 기존 문서를 다시 로드하세요<br><br>
                 <strong>채팅 모드:</strong><br>
                 • <strong>RAG 채팅:</strong> 업로드된 문서를 기반으로 한 질의응답<br>
@@ -492,7 +492,7 @@
             welcomeDiv.innerHTML = `
                 <strong>Spring AI RAG 채팅에 오신 것을 환영합니다!</strong><br><br>
                 <strong>문서가 없는 경우:</strong><br>
-                • "문서 업로드" 버튼을 클릭하여 마크다운(.md) 파일을 업로드하세요<br>
+                • "문서 업로드" 버튼을 클릭하여 문서 파일(.md, .hwp, .hwpx)을 업로드하세요<br>
                 • 또는 "문서 재인덱싱" 버튼을 클릭하여 기존 문서를 다시 로드하세요<br><br>
                 <strong>채팅 모드:</strong><br>
                 • <strong>RAG 채팅:</strong> 업로드된 문서를 기반으로 한 질의응답<br>
@@ -1109,8 +1109,8 @@
             // 확장자/용량 제한
             let totalSize = 0;
             for (let file of files) {
-                if (!file.name.endsWith('.md')) {
-                    statusSpan.textContent = '마크다운(.md) 파일만 업로드 가능합니다.';
+                if (!/\.(md|hwp|hwpx)$/i.test(file.name)) {
+                    statusSpan.textContent = '.md, .hwp, .hwpx 파일만 업로드 가능합니다.';
                     statusSpan.style.color = 'red';
                     return;
                 }

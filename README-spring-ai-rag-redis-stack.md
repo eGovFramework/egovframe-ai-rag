@@ -270,7 +270,7 @@ spring:
 |--------|----------|------|
 | POST | `/api/documents/reindex` | 문서 재인덱싱 |
 | GET | `/api/documents/status` | 인덱싱 상태 조회 |
-| POST | `/api/documents/upload` | 마크다운 파일 업로드 (최대 5개, 5MB/파일) |
+| POST | `/api/documents/upload` | 문서 파일 업로드 (.md/.hwp/.hwpx, 최대 5개, 5MB/파일) |
 
 ### 모델 관리 API
 

@@ -33,11 +33,11 @@ public class EgovDocumentController {
     }
 
     /**
-     * Markdown 파일 업로드 (최대 5개, .md만, 파일당 5MB, 총 20MB)
+     * 문서 파일 업로드 (최대 5개, .md/.hwp/.hwpx, 파일당 5MB, 총 20MB)
      */
     @PostMapping("/upload")
-    public ResponseEntity<Map<String, Object>> uploadMarkdownFiles(@RequestParam("files") MultipartFile[] files) {
-        Map<String, Object> result = egovDocumentService.uploadMarkdownFiles(files);
+    public ResponseEntity<Map<String, Object>> uploadDocumentFiles(@RequestParam("files") MultipartFile[] files) {
+        Map<String, Object> result = egovDocumentService.uploadDocumentFiles(files);
         boolean success = Boolean.TRUE.equals(result.get("success"));
         if (success) {
             return ResponseEntity.ok(result);
