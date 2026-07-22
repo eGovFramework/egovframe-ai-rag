@@ -107,6 +107,9 @@ document:
 
 # RAG 설정
 rag:
+  # 멀티턴 질의 압축(재작성): 후속 질문을 대화 이력 기반 독립형 질의로 재작성해 검색 품질을 높인다.
+  # spring-ai 모듈의 enable-query-compression과 동일 키. 기본 OFF(기존 동작 보존).
+  enable-query-compression: false
   # RAG 유사도 임계값 설정 (0.0 ~ 1.0)
   similarity:
     threshold: 0.70
