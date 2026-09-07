@@ -93,9 +93,8 @@ public class EgovDocxReader {
                 return null;
             }
 
-            String baseFilename = filename.replaceAll("\\.docx$", "");
-            String safeFilename = baseFilename.replaceAll("[\\/:*?\"<>|]", "")
-                    .replaceAll("\\s+", "-");
+            // 하위 폴더의 동명 파일이 같은 id 를 받지 않도록 기본 디렉터리 기준 상대 경로를 쓴다
+            String safeFilename = EgovDocumentIdResolver.resolveKeyWithoutExtension(resource, docxDocumentPath);
             String customId = String.format("docx-%s_1", safeFilename);
 
             Metadata metadata = Metadata.from("id", customId);

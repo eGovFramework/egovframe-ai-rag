@@ -71,7 +71,9 @@ public class EgovMarkdownReader {
             return null;
         }
 
-        Metadata metadata = createEnhancedMetadata(filename, content);
+        // 하위 폴더의 동명 파일이 같은 id 를 받지 않도록 기본 디렉터리 기준 상대 경로를 쓴다
+        Metadata metadata = createEnhancedMetadata(filename, content,
+                EgovDocumentIdResolver.resolveKey(resource, documentPath));
 
         log.info("마크다운 문서 로드 완료: {}, 크기: {}바이트", filename, content.length());
 
@@ -79,9 +81,11 @@ public class EgovMarkdownReader {
     }
 
     private Metadata createEnhancedMetadata(String filename, String content) {
-        String docId = "doc-" + filename
-                .replaceAll("[\\/:*?\"<>|]", "")
-                .replaceAll("\\s+", "-");
+        return createEnhancedMetadata(filename, content, EgovDocumentIdResolver.sanitizeKey(filename));
+    }
+
+    private Metadata createEnhancedMetadata(String filename, String content, String idKey) {
+        String docId = "doc-" + idKey;
 
         Metadata metadata = Metadata.from("id", docId);
         metadata.put("source", filename);
