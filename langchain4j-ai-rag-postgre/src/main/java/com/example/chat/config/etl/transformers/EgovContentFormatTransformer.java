@@ -63,7 +63,9 @@ public class EgovContentFormatTransformer implements DocumentTransformer {
 
         // 공백 정규화
         if (normalizeWhitespace) {
-            normalizedContent = normalizedContent.replaceAll("[^\\S\\r\\n]+", " ");
+            // \h 는 유니코드 수평 공백을 포함한다. 자바 \s 는 ASCII 전용이라
+            // 비줄바꿈 공백(U+00A0)·전각 공백(U+3000) 등이 공백으로 인식되지 않았다.
+            normalizedContent = normalizedContent.replaceAll("[\\h\\x0B\\f]+", " ");
         }
 
         // 줄바꿈 정규화 (CRLF -> LF 통일 후 빈 줄 제거)

@@ -105,4 +105,50 @@ class EgovContentFormatTransformerTest {
         assertThat(result.metadata().getString("normalized_length")).isEqualTo("3");
         assertThat(result.metadata().getString("normalization_applied")).isEqualTo("true");
     }
+
+    @Test
+    @DisplayName("공백 정규화는 비줄바꿈 공백과 전각 공백도 일반 공백으로 바꾼다")
+    void normalizeWhitespaceHandlesUnicodeSpaces() {
+        EgovContentFormatTransformer transformer = transformer(true, true, false);
+
+        // U+00A0 비줄바꿈 공백, U+3000 전각 공백, U+202F 좁은 비줄바꿈 공백
+        assertThat(text(transformer, "기관\u00A0문서")).isEqualTo("기관 문서");
+        assertThat(text(transformer, "제1조\u3000목적")).isEqualTo("제1조 목적");
+        assertThat(text(transformer, "담당자\u202F연락처")).isEqualTo("담당자 연락처");
+    }
+
+    @Test
+    @DisplayName("공백 정규화가 꺼져 있으면 유니코드 공백도 그대로 남는다")
+    void unicodeSpacesAreKeptWhenNormalizationIsOff() {
+        EgovContentFormatTransformer transformer = transformer(true, false, false);
+
+        assertThat(text(transformer, "기관\u00A0문서")).isEqualTo("기관\u00A0문서");
+    }
+
+    @Test
+    @DisplayName("운영 기본 설정에서 유니코드 공백이 삭제되지 않고 낱말이 분리된 채 남는다")
+    void unicodeSpacesSurviveAsSeparatorUnderProductionDefaults() {
+        EgovContentFormatTransformer transformer = productionDefaults();
+
+        // 공백 정규화가 잡지 못하면 뒤이은 특수문자 정리가 이 문자들을 지워 앞뒤 낱말이 붙는다
+        assertThat(text(transformer, "기관\u00A0문서")).isEqualTo("기관 문서");
+        assertThat(text(transformer, "제1조\u3000목적")).isEqualTo("제1조 목적");
+        assertThat(text(transformer, "담당자\u202F연락처")).isEqualTo("담당자 연락처");
+    }
+
+    /** 운영 기본 설정 그대로. 특수문자 정리까지 켠 상태다. */
+    private EgovContentFormatTransformer productionDefaults() {
+        EgovContentFormatTransformer transformer = new EgovContentFormatTransformer();
+        ReflectionTestUtils.setField(transformer, "normalizationEnabled", true);
+        ReflectionTestUtils.setField(transformer, "removeHtmlTags", true);
+        ReflectionTestUtils.setField(transformer, "normalizeWhitespace", true);
+        ReflectionTestUtils.setField(transformer, "normalizeNewlines", true);
+        ReflectionTestUtils.setField(transformer, "removeCodeBlocks", false);
+        ReflectionTestUtils.setField(transformer, "cleanSpecialChars", true);
+        return transformer;
+    }
+
+    private String text(EgovContentFormatTransformer transformer, String content) {
+        return transformer.transform(Document.from(content)).text();
+    }
 }
