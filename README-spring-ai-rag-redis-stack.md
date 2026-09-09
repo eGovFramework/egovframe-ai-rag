@@ -381,7 +381,7 @@ spring:
     document:
       path: file:C:/workspace-test/upload/data/**/*.md
       pdf-path: file:C:/workspace-test/upload/data/**/*.pdf
-      chunk-size: 4000                # 청크 크기 (토큰 단위)
+      chunk-size: 400                 # 청크 크기 (토큰 단위)
       min-chunk-size-chars: 350       # 최소 청크 크기 (문자 단위)
 
   # Redis 연결 설정
