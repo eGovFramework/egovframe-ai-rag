@@ -94,9 +94,16 @@ spec:
             - name: models
               mountPath: /models
               readOnly: true
+            # 색인 대상 문서 디렉터리. application.yml의 document.* 경로를
+            # ConfigMap이 /workspace/data로 오버라이드한다.
+            - name: documents
+              mountPath: /workspace/data
+              readOnly: true
       volumes:
         - name: tmp
           emptyDir: {}
         - name: models
           persistentVolumeClaim:
             claimName: langchain4j-ai-rag-postgre-models
+        - name: documents
+          emptyDir: {}  # 운영 시 PersistentVolumeClaim으로 교체
