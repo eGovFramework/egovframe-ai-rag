@@ -197,23 +197,23 @@ Flux<String> 스트리밍 응답
 
 | Method | Endpoint | 설명 |
 |--------|----------|------|
-| POST | `/api/sessions` | 새 세션 생성 |
-| GET | `/api/sessions` | 전체 세션 목록 |
-| GET | `/api/sessions/{sessionId}/messages` | 세션 메시지 조회 |
-| PUT | `/api/sessions/{sessionId}/title` | 세션 제목 변경 |
-| DELETE | `/api/sessions/{sessionId}` | 세션 삭제 |
+| POST | `/api/chat/sessions` | 새 세션 생성 |
+| GET | `/api/chat/sessions` | 전체 세션 목록 |
+| GET | `/api/chat/sessions/{sessionId}/messages` | 세션 메시지 조회 |
+| PUT | `/api/chat/sessions/{sessionId}/title` | 세션 제목 변경 |
+| DELETE | `/api/chat/sessions/{sessionId}` | 세션 삭제 |
 
 ### 채팅 API
 
 | Method | Endpoint | 설명 |
 |--------|----------|------|
-| GET | `/api/chat/stream/rag` | RAG 기반 스트리밍 채팅 |
-| GET | `/api/chat/stream/simple` | 일반 스트리밍 채팅 |
+| GET | `/ai/rag/stream` | RAG 기반 스트리밍 채팅 |
+| GET | `/ai/simple/stream` | 일반 스트리밍 채팅 |
 
 **파라미터:**
-- `query`: 사용자 질문
+- `message`: 사용자 질문
 - `model`: 모델명 (선택, 기본값: application.yml 설정)
-- `sessionId`: 세션 ID (헤더)
+- `sessionId`: 세션 ID (선택)
 
 ### 문서 관리 API
 
@@ -221,6 +221,7 @@ Flux<String> 스트리밍 응답
 |--------|----------|------|
 | POST | `/api/documents/reindex` | 문서 재인덱싱 |
 | GET | `/api/documents/status` | 인덱싱 상태 조회 |
+| POST | `/api/documents/upload` | 문서 파일 업로드 (.md/.hwp/.hwpx, 최대 5개, 5MB/파일) |
 
 ### 모델 관리 API
 
