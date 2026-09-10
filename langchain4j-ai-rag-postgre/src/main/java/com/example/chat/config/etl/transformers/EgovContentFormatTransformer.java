@@ -45,7 +45,17 @@ public class EgovContentFormatTransformer implements DocumentTransformer {
     private static final Pattern CODE_BLOCK_PATTERN = Pattern.compile("```[\\s\\S]*?```");
     private static final Pattern SPECIAL_CHARS_PATTERN = Pattern.compile(
             "[^\\uAC00-\\uD7AF\\u1100-\\u11FF\\u3130-\\u318F\\uA960-\\uA97F\\uD7B0-\\uD7FF" +
-                    "a-zA-Z0-9\\s\\n\\t\\-_.,()\\[\\]{}\"':;!?@#$%&*+=|\\\\/<>]");
+                    "a-zA-Z0-9\\s\\n\\t\\-_.,()\\[\\]{}\"':;!?@#$%&*+=|\\\\/<>" +
+                    // 한국어 행정문서에 흔한 문자들. 아래가 없으면 본문에서 지워진다.
+                    "\\u00B0-\\u00B7" +   // 도, 플러스마이너스, 제곱·세제곱, 가운뎃점
+                    "\\u2010-\\u2027" +   // 붙임표류, 따옴표, 말줄임표
+                    "\\u20A0-\\u20BF" +   // 통화 기호(원)
+                    "\\u2100-\\u214F" +   // 섭씨, 번호
+                    "\\u2460-\\u24FF" +   // 원문자 번호
+                    "\\u3001-\\u303F" +   // 낫표, 겹낫표, 홑화살괄호
+                    "\\u3300-\\u33FF" +   // 제곱미터, 킬로그램 등 단위 기호
+                    "\\u4E00-\\u9FFF" +   // 한자
+                    "]");
 
     @Override
     public Document transform(Document document) {
