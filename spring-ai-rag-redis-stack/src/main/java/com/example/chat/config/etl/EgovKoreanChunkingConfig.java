@@ -17,7 +17,7 @@ public class EgovKoreanChunkingConfig {
     @Bean
     @ConditionalOnProperty(prefix = "spring.ai.document.chunking.korean-sentence", name = "enabled", havingValue = "true")
     public EgovKoreanSentenceSplitter koreanSentenceTextSplitter(
-            @Value("${spring.ai.document.chunk-size:4000}") int chunkSize,
+            @Value("${spring.ai.document.chunk-size:400}") int chunkSize,
             @Value("${spring.ai.document.min-chunk-size-chars:350}") int minChunkSizeChars,
             @Value("${spring.ai.document.min-chunk-length-to-embed:50}") int minChunkLengthToEmbed,
             @Value("${spring.ai.document.max-num-chunks:500}") int maxNumChunks) {
