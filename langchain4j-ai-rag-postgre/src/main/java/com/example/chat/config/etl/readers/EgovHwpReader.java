@@ -4,8 +4,6 @@ import dev.langchain4j.data.document.Document;
 import dev.langchain4j.data.document.Metadata;
 import kr.dogfoot.hwplib.object.HWPFile;
 import kr.dogfoot.hwplib.reader.HWPReader;
-import kr.dogfoot.hwplib.tool.textextractor.TextExtractMethod;
-import kr.dogfoot.hwplib.tool.textextractor.TextExtractor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
@@ -84,7 +82,9 @@ public class EgovHwpReader {
         HWPFile hwpFile = HWPReader.fromFile(file);
 
         // 본문 + 표/각주 등 컨트롤 텍스트까지 포함하여 추출
-        String content = TextExtractor.extract(hwpFile, TextExtractMethod.AppendControlTextAfterParagraphText);
+        // 문단·표 구조를 남겨 추출한다. hwplib 기본 추출은 표의 행·셀 구분자를 넣지 않아
+        // 어느 값이 어느 행에 속하는지 복원할 수 없다.
+        String content = EgovHwpStructuredExtractor.extract(hwpFile);
 
         if (content == null || content.trim().isEmpty()) {
             log.warn("HWP 파일 '{}': 추출된 텍스트가 없습니다.", filename);

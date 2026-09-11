@@ -2,6 +2,12 @@ spring:
   application:
     name: langchain4j-ai-rag-postgre-test
 
+  # 업로드 한도 (main 과 동일). test classpath 의 이 파일이 main 의 application.yml 을 가린다.
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 21MB
+
   # H2 데이터베이스 설정 (테스트용)
   datasource:
     url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL

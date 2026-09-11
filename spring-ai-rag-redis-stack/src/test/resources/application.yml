@@ -2,6 +2,12 @@ spring:
   application:
     name: spring-ai-rag-redis-test
 
+  # 업로드 한도 (main 과 동일). test classpath 의 이 파일이 main 의 application.yml 을 가린다.
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 21MB
+
   ai:
     ollama:
       base-url: http://localhost:11434

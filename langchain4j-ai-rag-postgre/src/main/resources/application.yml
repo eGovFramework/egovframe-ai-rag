@@ -2,6 +2,15 @@ spring:
   application:
     name: langchain4j-ai-rag-postgre
 
+  # 업로드 한도. 컨트롤러·서비스가 선언한 계약(파일당 5MB, 총 20MB)이 톰캣 멀티파트 파서에
+  # 먼저 걸리지 않도록 맞춘다. 기본값 1MB/10MB 로는 계약상 허용인 파일이 서비스 검증에
+  # 닿기도 전에 413으로 끊긴다. max-request-size 는 20MB 정각이 아니라 여유를 둔다 —
+  # 서비스의 총량 검증은 파일 바이트만 세지만 실제 요청에는 멀티파트 경계·헤더가 더 실린다.
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 21MB
+
   # PostgreSQL 데이터베이스 설정
   datasource:
     url: jdbc:postgresql://localhost:5432/ragdb

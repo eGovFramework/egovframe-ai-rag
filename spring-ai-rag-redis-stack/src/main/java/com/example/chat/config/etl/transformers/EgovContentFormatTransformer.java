@@ -47,7 +47,17 @@ public class EgovContentFormatTransformer implements DocumentTransformer {
     private static final Pattern CODE_BLOCK_PATTERN = Pattern.compile("```[\\s\\S]*?```");
     private static final Pattern SPECIAL_CHARS_PATTERN = Pattern.compile(
         "[^\\uAC00-\\uD7AF\\u1100-\\u11FF\\u3130-\\u318F\\uA960-\\uA97F\\uD7B0-\\uD7FF" +
-        "a-zA-Z0-9\\s\\n\\t\\-_.,()\\[\\]{}\"':;!?@#$%&*+=|\\\\/<>]");
+        "a-zA-Z0-9\\s\\n\\t\\-_.,()\\[\\]{}\"':;!?@#$%&*+=|\\\\/<>" +
+        // 한국어 행정문서에 흔한 문자들. 아래가 없으면 본문에서 지워진다.
+        "\\u00B0-\\u00B7" +   // 도, 플러스마이너스, 제곱·세제곱, 가운뎃점
+        "\\u2010-\\u2027" +   // 붙임표류, 따옴표, 말줄임표
+        "\\u20A0-\\u20BF" +   // 통화 기호(원)
+        "\\u2100-\\u214F" +   // 섭씨, 번호
+        "\\u2460-\\u24FF" +   // 원문자 번호
+        "\\u3001-\\u303F" +   // 낫표, 겹낫표, 홑화살괄호
+        "\\u3300-\\u33FF" +   // 제곱미터, 킬로그램 등 단위 기호
+        "\\u4E00-\\u9FFF" +   // 한자
+        "]");
     
     public EgovContentFormatTransformer() {
         // Spring AI의 DefaultContentFormatter 사용 - 템플릿 포맷팅만 담당
@@ -105,7 +115,9 @@ public class EgovContentFormatTransformer implements DocumentTransformer {
         
         // 공백 정규화
         if (normalizeWhitespace) {
-            normalizedContent = normalizedContent.replaceAll("[^\\S\\r\\n]+", " ");
+            // \h 는 유니코드 수평 공백을 포함한다. 자바 \s 는 ASCII 전용이라
+            // 비줄바꿈 공백(U+00A0)·전각 공백(U+3000) 등이 공백으로 인식되지 않았다.
+            normalizedContent = normalizedContent.replaceAll("[\\h\\x0B\\f]+", " ");
         }
         
         // 줄바꿈 정규화 (CRLF -> LF 통일 후 빈 줄 제거)
