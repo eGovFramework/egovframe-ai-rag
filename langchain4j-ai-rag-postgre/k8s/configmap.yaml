@@ -24,6 +24,14 @@ data:
   # LangChain4j Ollama (langchain4j.ollama.base-url → LANGCHAIN4J_OLLAMA_BASE_URL)
   LANGCHAIN4J_OLLAMA_BASE_URL: "http://ollama:11434"
 
+  # 문서 경로 (document.*)
+  # deployment.yaml의 documents 볼륨 마운트 지점을 가리킨다.
+  DOCUMENT_PATH: "file:/workspace/data/**/*.md"
+  DOCUMENT_PDF_PATH: "file:/workspace/data/**/*.pdf"
+  DOCUMENT_DOCX_PATH: "file:/workspace/data/**/*.docx"
+  DOCUMENT_HWP_PATH: "file:/workspace/data/**/*.hwp"
+  DOCUMENT_HWPX_PATH: "file:/workspace/data/**/*.hwpx"
+
   # 임베딩 설정 파일 경로 (app.embedding-config-path → APP_EMBEDDING_CONFIG_PATH)
   # PVC가 사용자 홈 디렉터리 내용을 /models에 마운트하므로 application.yml 기본값
   # (${user.home}/langchain4j-Config/Config/embeddingConfig.json)과 동일한 하위 경로를 유지한다.

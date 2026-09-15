@@ -16,6 +16,9 @@ data:
   SPRING_DATA_REDIS_PORT: "6379"
   SPRING_AI_DOCUMENT_PATH: "file:/workspace/data/**/*.md"
   SPRING_AI_DOCUMENT_PDF_PATH: "file:/workspace/data/**/*.pdf"
+  SPRING_AI_DOCUMENT_DOCX_PATH: "file:/workspace/data/**/*.docx"
+  SPRING_AI_DOCUMENT_HWP_PATH: "file:/workspace/data/**/*.hwp"
+  SPRING_AI_DOCUMENT_HWPX_PATH: "file:/workspace/data/**/*.hwpx"
 
   # ONNX 임베딩 모델을 PVC 마운트 경로에서 로드하도록 지정.
   # application.yml의 file:${EMBEDDING_MODEL_PATH} / file:${EMBEDDING_TOKENIZER_PATH}를 오버라이드한다.

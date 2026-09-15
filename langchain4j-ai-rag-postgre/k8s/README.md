@@ -102,6 +102,11 @@ image: <레지스트리>/langchain4j-ai-rag-postgre:1.0.0
 | `PGVECTOR_DATABASE` | `ragdb` | `pgvector.database` |
 | `PGVECTOR_USERNAME` | `postgres` | `pgvector.username` |
 | `LANGCHAIN4J_OLLAMA_BASE_URL` | `http://ollama:11434` | `langchain4j.ollama.base-url` |
+| `DOCUMENT_PATH` | `file:/workspace/data/**/*.md` | `document.path` |
+| `DOCUMENT_PDF_PATH` | `file:/workspace/data/**/*.pdf` | `document.pdf-path` |
+| `DOCUMENT_DOCX_PATH` | `file:/workspace/data/**/*.docx` | `document.docx-path` |
+| `DOCUMENT_HWP_PATH` | `file:/workspace/data/**/*.hwp` | `document.hwp-path` |
+| `DOCUMENT_HWPX_PATH` | `file:/workspace/data/**/*.hwpx` | `document.hwpx-path` |
 | `APP_EMBEDDING_CONFIG_PATH` | `/models/langchain4j-Config/Config/embeddingConfig.json` | `app.embedding-config-path` |
 | `HOME` | `/models` | `embeddingConfig.json`의 `${HOME}` 치환 기준 경로 |
 | `MANAGEMENT_HEALTH_PROBES_ENABLED` | `true` | `management.health.probes.enabled` |
@@ -238,6 +243,7 @@ spec:
 | Ollama 서비스 | `http://ollama:11434` | 클러스터 내 DNS 기본값 |
 | 임베딩 설정 파일 경로 | `/models/langchain4j-Config/Config/embeddingConfig.json` | PVC 마운트 경로 |
 | 모델 PVC | `langchain4j-ai-rag-postgre-models` (5Gi) | 사전 적재 필요 |
+| 문서 디렉터리 | `/workspace/data` | `documents` 볼륨(emptyDir). 운영 시 PVC로 교체 |
 
 ---
 

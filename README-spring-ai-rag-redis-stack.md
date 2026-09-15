@@ -606,7 +606,9 @@ image: <레지스트리>/spring-ai-rag-redis:1.0.0
 | `SPRING_DATA_REDIS_PORT` | `spring.data.redis.port` | `6379` | Redis 연결 포트 |
 | `SPRING_AI_DOCUMENT_PATH` | `spring.ai.document.path` | `file:/workspace/data/**/*.md` | 문서 경로 (글로브 패턴) |
 | `SPRING_AI_DOCUMENT_PDF_PATH` | `spring.ai.document.pdf-path` | `file:/workspace/data/**/*.pdf` | PDF 문서 경로 |
-| `SPRING_AI_DOCUMENT_HWPX_PATH` | `spring.ai.document.hwpx-path` | (미설정 시 HWPX 건너뜀) | HWPX 문서 경로 |
+| `SPRING_AI_DOCUMENT_DOCX_PATH` | `spring.ai.document.docx-path` | `file:/workspace/data/**/*.docx` | DOCX 문서 경로 |
+| `SPRING_AI_DOCUMENT_HWP_PATH` | `spring.ai.document.hwp-path` | `file:/workspace/data/**/*.hwp` | HWP 문서 경로 |
+| `SPRING_AI_DOCUMENT_HWPX_PATH` | `spring.ai.document.hwpx-path` | `file:/workspace/data/**/*.hwpx` | HWPX 문서 경로 |
 | `EMBEDDING_MODEL_PATH` | `spring.ai.embedding.transformer.onnx.modelUri` 내 치환 | `/models/spring-ai-Config/model/model.onnx` | ONNX 모델 경로 (PVC) |
 | `EMBEDDING_TOKENIZER_PATH` | `spring.ai.embedding.transformer.tokenizer.uri` 내 치환 | `/models/spring-ai-Config/model/tokenizer.json` | 토크나이저 경로 (PVC) |
 | `MANAGEMENT_HEALTH_PROBES_ENABLED` | `management.health.probes.enabled` | `true` | K8s readiness/liveness probe 활성화 |
