@@ -71,8 +71,10 @@ public class EgovPdfReader implements DocumentReader {
                     }
                     
                     // Document ID를 파일명과 페이지 기반으로 재생성
+                    // 하위 폴더의 동명 파일이 같은 id 를 받지 않도록 기본 디렉터리 기준 상대 경로를 쓴다
                     List<Document> documentsWithCustomIds = createDocumentsWithCustomIds(
-                        documents, resource.getFilename());
+                        documents, resource.getFilename(),
+                        EgovDocumentIdResolver.resolveKeyWithoutExtension(resource, pdfDocumentPath));
                     
                     log.info("PDF 파일 '{}'에서 {}개의 문서를 커스텀 ID로 변환했습니다.", 
                         resource.getFilename(), documentsWithCustomIds.size());
@@ -98,6 +100,11 @@ public class EgovPdfReader implements DocumentReader {
      * Document ID를 파일명과 페이지 기반으로 재생성
      */
     private List<Document> createDocumentsWithCustomIds(List<Document> documents, String filename) {
+        return createDocumentsWithCustomIds(documents, filename,
+                EgovDocumentIdResolver.sanitizeKey(filename.replaceAll("\\.pdf$", "")));
+    }
+
+    private List<Document> createDocumentsWithCustomIds(List<Document> documents, String filename, String idKey) {
         List<Document> documentsWithCustomIds = new ArrayList<>();
         
         for (int i = 0; i < documents.size(); i++) {
@@ -113,11 +120,7 @@ public class EgovPdfReader implements DocumentReader {
                 log.debug("PDF 페이지 {}: 매우 짧은 내용 (길이: {})", i + 1, content.trim().length());
             }
             
-            // 파일명에서 확장자 제거
-            String baseFilename = filename.replaceAll("\\.pdf$", "");
-            
-            // 안전한 파일명 생성 (특수문자 제거)
-            String safeFilename = baseFilename.replaceAll("[\\/:*?\"<>|]", "").replaceAll("\\s+", "-");
+            String safeFilename = idKey;
             
             // 새로운 Document ID 생성: pdf-파일명_페이지번호
             String customId = String.format("pdf-%s_%d", safeFilename, i + 1);

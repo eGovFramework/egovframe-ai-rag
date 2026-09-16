@@ -81,10 +81,8 @@ public class EgovDocxReader implements DocumentReader {
 
         Map<String, Object> metadata = createMetadata(filename, content);
 
-        String safeFilename = filename
-                .replaceAll("\\.docx$", "")
-                .replaceAll("[\\/:*?\"<>|]", "")
-                .replaceAll("\\s+", "-");
+        // 하위 폴더의 동명 파일이 같은 id 를 받지 않도록 기본 디렉터리 기준 상대 경로를 쓴다
+        String safeFilename = EgovDocumentIdResolver.resolveKeyWithoutExtension(resource, docxDocumentPath);
         String docId = "docx-" + safeFilename;
         // 분할 이후에도 원본 문서를 식별할 수 있도록 문서 id 를 메타데이터에도 담는다
         metadata.put("original_id", docId);

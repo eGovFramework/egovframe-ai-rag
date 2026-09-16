@@ -128,9 +128,8 @@ public class EgovHwpxReader {
                 return null;
             }
 
-            String baseFilename = filename.replaceAll("\\.hwpx$", "");
-            String safeFilename = baseFilename.replaceAll("[\\/:*?\"<>|]", "")
-                    .replaceAll("\\s+", "-");
+            // 하위 폴더의 동명 파일이 같은 id 를 받지 않도록 기본 디렉터리 기준 상대 경로를 쓴다
+            String safeFilename = EgovDocumentIdResolver.resolveKeyWithoutExtension(resource, hwpxDocumentPath);
             String customId = String.format("hwpx-%s_1", safeFilename);
 
             Metadata metadata = Metadata.from("id", customId);
