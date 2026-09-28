@@ -10,6 +10,23 @@ RAG(Retrieval-Augmented Generation) 기반의 AI 질의응답 시스템 샘플 �
 | [spring-ai-rag-redis-stack](./spring-ai-rag-redis-stack) | Spring AI 1.0.1 | Redis Stack | [README](./README-spring-ai-rag-redis-stack.md) |
 | [langchain4j-ai-rag-postgre](./langchain4j-ai-rag-postgre) | LangChain4j 1.8.0 | PostgreSQL (PGVector) | [README](./README-langchain4j-ai-rag-postgre.md) |
 
+## 모듈 기능 패리티
+
+두 샘플은 동일한 기능 집합을 목표로 한다. 기능별 제공 현황은 다음과 같다.
+
+| 기능 | spring-ai (Redis Stack) | langchain4j (PGVector) |
+| :--- | :---: | :---: |
+| 문서 리더 (Docx·Hwp·Hwpx·Markdown·Pdf) | O | O |
+| 문서 업로드 (현재 `.md`/`.hwp`/`.hwpx`) | O | O |
+| 하이브리드 검색 (벡터 + 키워드) | O | O |
+| 프롬프트 기법 데모 (zero-shot ~ quality-check) | O | O |
+| 스트리밍 응답 (RAG·simple) | O | O |
+| 세션 기반 대화 이력 | O (Redis) | O (JPA/PostgreSQL) |
+| 구조화 출력(JSON) 데모 | O | - |
+| 검색 품질 평가(recall) 테스트 | - | O |
+
+저장소·설정 방식의 차이는 기술 스택 특성에 따른 것이다. `-` 항목은 아직 한쪽 모듈에만 구현돼 있으며, 새 기능은 가급적 두 모듈에 함께 반영해 패리티를 유지한다.
+
 ## 공통 환경
 
 | 항목 | 버전 |
