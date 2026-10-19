@@ -24,6 +24,7 @@ import org.testcontainers.utility.DockerImageName;
 import com.example.chat.config.EgovVectorStoreConfig;
 
 import redis.clients.jedis.JedisPooled;
+import redis.clients.jedis.search.Query;
 
 /**
  * 실제 redis-stack에 붙여 재색인 시 기존 청크가 지워지는지 검증한다.
@@ -97,7 +98,7 @@ class EgovVectorStoreWriterRedisDbTest {
     @DisplayName("하이픈과 마침표가 든 문서 id로 재색인하면 이전 청크만 지워진다")
     void reindexRemovesOnlyStaleChunks() {
         RedisVectorStore store = vectorStore("reindex-index");
-        EgovVectorStoreWriter writer = new EgovVectorStoreWriter(store);
+        EgovVectorStoreWriter writer = new EgovVectorStoreWriter(store, "reindex-index");
         String originalId = "doc-Term-level-Queries의-종류.md";
 
         writer.accept(List.of(chunk(originalId, "v1 첫 번째 본문"), chunk(originalId, "v1 두 번째 본문")));
@@ -114,7 +115,7 @@ class EgovVectorStoreWriterRedisDbTest {
     @DisplayName("같은 파일의 다른 페이지는 재색인 대상에서 살아남는다")
     void reindexKeepsOtherPagesOfTheSameFile() {
         RedisVectorStore store = vectorStore("page-index");
-        EgovVectorStoreWriter writer = new EgovVectorStoreWriter(store);
+        EgovVectorStoreWriter writer = new EgovVectorStoreWriter(store, "page-index");
 
         writer.accept(List.of(chunk("pdf-개발가이드_1", "1페이지 본문"), chunk("pdf-개발가이드_2", "2페이지 본문")));
         assertThat(storedDocuments(store)).hasSize(2);
@@ -123,5 +124,28 @@ class EgovVectorStoreWriterRedisDbTest {
 
         List<String> texts = storedDocuments(store).stream().map(Document::getText).toList();
         assertThat(texts).containsExactlyInAnyOrder("1페이지 본문", "2페이지 새 본문");
+    }
+
+    @Test
+    @DisplayName("기존 청크가 한 번의 조회 한도(1000건)를 넘어도 모두 지워진다")
+    void reindexRemovesChunksBeyondOnePage() {
+        RedisVectorStore store = vectorStore("bulk-index");
+        EgovVectorStoreWriter writer = new EgovVectorStoreWriter(store, "bulk-index");
+        String originalId = "doc-대용량.md";
+
+        List<Document> chunks = new ArrayList<>();
+        for (int i = 0; i < 1001; i++) {
+            chunks.add(chunk(originalId, "v1 본문 " + i));
+        }
+        writer.accept(chunks);
+        assertThat(indexedCount(store, "bulk-index")).isEqualTo(1001);
+
+        writer.accept(List.of(chunk(originalId, "v2 본문")));
+
+        assertThat(indexedCount(store, "bulk-index")).isEqualTo(1);
+    }
+
+    private long indexedCount(RedisVectorStore store, String indexName) {
+        return store.getJedis().ftSearch(indexName, new Query("*").setNoContent().limit(0, 0)).getTotalResults();
     }
 }
