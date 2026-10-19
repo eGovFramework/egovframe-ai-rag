@@ -4,7 +4,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -86,12 +85,12 @@ public class EgovOllamaChatController {
             } else {
                 log.warn("존재하지 않는 세션 ID: {}, 기본 세션으로 처리", sessionId);
                 // 존재하지 않는 세션 ID인 경우 기본 세션으로 처리
-                SessionContext.setCurrentSessionId(ChatMemory.DEFAULT_CONVERSATION_ID);
+                SessionContext.setCurrentSessionId(SessionContext.DEFAULT_CONVERSATION_ID);
             }
         } else {
             log.warn("세션 ID가 제공되지 않음, 기본 세션으로 처리");
             // 세션 ID가 없는 경우 기본 세션으로 처리
-            SessionContext.setCurrentSessionId(ChatMemory.DEFAULT_CONVERSATION_ID);
+            SessionContext.setCurrentSessionId(SessionContext.DEFAULT_CONVERSATION_ID);
         }
 
         String currentSessionId = SessionContext.getCurrentSessionId();
@@ -133,11 +132,11 @@ public class EgovOllamaChatController {
             } else {
                 log.warn("존재하지 않는 세션 ID: {}, 기본 세션으로 처리", sessionId);
                 // 존재하지 않는 세션 ID인 경우 기본 세션으로 처리
-                SessionContext.setCurrentSessionId(ChatMemory.DEFAULT_CONVERSATION_ID);
+                SessionContext.setCurrentSessionId(SessionContext.DEFAULT_CONVERSATION_ID);
             }
         } else {
             // 세션 ID가 없는 경우 기본 세션으로 처리
-            SessionContext.setCurrentSessionId(ChatMemory.DEFAULT_CONVERSATION_ID);
+            SessionContext.setCurrentSessionId(SessionContext.DEFAULT_CONVERSATION_ID);
         }
 
         // 일반 스트리밍 응답 생성 (RAG 없이)

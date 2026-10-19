@@ -60,7 +60,13 @@ class EgovKoreanChunkingToggleTest {
         Document document = new Document(
                 "전자정부 표준프레임워크 문서입니다. 기존 TokenTextSplitter 경로를 검증합니다. 폴백 결과가 같아야 합니다.");
         List<Document> documents = List.of(document);
-        TokenTextSplitter tokenTextSplitter = new TokenTextSplitter(30, 10, 0, 100, true);
+        TokenTextSplitter tokenTextSplitter = TokenTextSplitter.builder()
+                .withChunkSize(30)
+                .withMinChunkSizeChars(10)
+                .withMinChunkLengthToEmbed(0)
+                .withMaxNumChunks(100)
+                .withKeepSeparator(true)
+                .build();
 
         List<String> expected = tokenTextSplitter.apply(documents).stream()
                 .map(Document::getText)

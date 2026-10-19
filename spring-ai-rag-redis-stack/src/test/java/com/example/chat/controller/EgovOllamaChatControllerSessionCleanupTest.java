@@ -7,7 +7,6 @@ import com.example.chat.util.EgovPromptTemplateManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.ollama.OllamaChatModel;
 import reactor.core.publisher.Flux;
@@ -58,7 +57,7 @@ class EgovOllamaChatControllerSessionCleanupTest {
         // 정리되면 ThreadLocal이 비어 기본 세션 ID가 반환된다.
         // 정리되지 않았다면(버그) "s-1"이 남아 단언이 실패한다.
         assertThat(SessionContext.getCurrentSessionId())
-                .isEqualTo(ChatMemory.DEFAULT_CONVERSATION_ID);
+                .isEqualTo(SessionContext.DEFAULT_CONVERSATION_ID);
         verify(sessionService).sessionExists("s-1");
     }
 
@@ -73,7 +72,7 @@ class EgovOllamaChatControllerSessionCleanupTest {
         controller.streamSimpleResponse("hi", null, "s-2");
 
         assertThat(SessionContext.getCurrentSessionId())
-                .isEqualTo(ChatMemory.DEFAULT_CONVERSATION_ID);
+                .isEqualTo(SessionContext.DEFAULT_CONVERSATION_ID);
         verify(sessionService).sessionExists("s-2");
     }
 }
