@@ -3,6 +3,8 @@ package com.example.chat.config.etl.readers;
 import dev.langchain4j.data.document.Document;
 import dev.langchain4j.data.document.Metadata;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.io.RandomAccessReadBuffer;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.springframework.beans.factory.annotation.Value;
@@ -89,7 +91,7 @@ public class EgovPdfReader {
         List<Document> documents = new ArrayList<>();
 
         try (InputStream inputStream = resource.getInputStream();
-             PDDocument pdf = PDDocument.load(inputStream)) {
+             PDDocument pdf = Loader.loadPDF(new RandomAccessReadBuffer(inputStream))) {
 
             int pageCount = pdf.getNumberOfPages();
             PDFTextStripper stripper = new PDFTextStripper();

@@ -5,6 +5,7 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
+import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ByteArrayResource;
@@ -31,7 +32,7 @@ class EgovPdfReaderPageNumberTest {
                 doc.addPage(page);
                 try (PDPageContentStream cs = new PDPageContentStream(doc, page)) {
                     cs.beginText();
-                    cs.setFont(PDType1Font.HELVETICA, 12);
+                    cs.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 12);
                     cs.newLineAtOffset(72, 720);
                     cs.showText(text);
                     cs.endText();
