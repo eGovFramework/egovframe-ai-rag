@@ -31,7 +31,8 @@ public class EgovKoreanSentenceSplitter extends TokenTextSplitter {
 
     public EgovKoreanSentenceSplitter(int chunkSize, int minChunkSizeChars,
             int minChunkLengthToEmbed, int maxNumChunks, boolean keepSeparator) {
-        super(chunkSize, minChunkSizeChars, minChunkLengthToEmbed, maxNumChunks, keepSeparator);
+        super(chunkSize, minChunkSizeChars, minChunkLengthToEmbed, maxNumChunks, keepSeparator,
+                List.of('.', '?', '!', '\n'));
         this.encoding = Encodings.newLazyEncodingRegistry().getEncoding(EncodingType.CL100K_BASE);
         this.chunkSize = chunkSize;
         this.minChunkLengthToEmbed = minChunkLengthToEmbed;

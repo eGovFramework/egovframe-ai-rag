@@ -84,8 +84,9 @@ public class EgovETLPipelineConfig {
     }
 
     @Bean
-    public EgovVectorStoreWriter vectorStoreWriter(RedisVectorStore redisVectorStore) {
+    public EgovVectorStoreWriter vectorStoreWriter(RedisVectorStore redisVectorStore,
+            @Value("${spring.ai.vectorstore.redis.index-name:document-index}") String indexName) {
         log.info("VectorStore DocumentWriter 빈 생성");
-        return new EgovVectorStoreWriter(redisVectorStore);
+        return new EgovVectorStoreWriter(redisVectorStore, indexName);
     }
 }

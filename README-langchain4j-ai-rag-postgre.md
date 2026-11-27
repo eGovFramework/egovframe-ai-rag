@@ -2,16 +2,16 @@
 
 ## 환경 설정
 
-### 표준프레임워크 실행환경 5.0 (Boot 적용)
+### 표준프레임워크 실행환경 5.1 (Boot 적용)
 
 | 항목 | 버전 |
 | :--- | :--- |
 | JDK | 17 |
 | Jakarta EE | 10 |
 | Servlet | 6.0 |
-| Spring Framework | 6.2.11 |
-| Spring Boot | 3.5.6 |
-| LangChain4j | 1.8.0 |
+| Spring Framework | 6.2.19 |
+| Spring Boot | 3.5.16 |
+| LangChain4j | 1.18.1 |
 
 ### 개발 및 빌드 도구
 
@@ -32,8 +32,8 @@
 ## 사용 기술
 
 1. Java 17
-2. Spring Boot 3.5.6 (Maven)
-3. LangChain4j 1.8.0 (AiServices 패턴)
+2. Spring Boot 3.5.16 (Maven)
+3. LangChain4j 1.18.1 (AiServices 패턴)
 4. PostgreSQL + PGVector
 5. Ollama
 6. ONNX Runtime (로컬 임베딩)

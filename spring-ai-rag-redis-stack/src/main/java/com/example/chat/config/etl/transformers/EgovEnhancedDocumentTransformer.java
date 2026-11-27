@@ -100,13 +100,13 @@ public class EgovEnhancedDocumentTransformer implements DocumentTransformer {
             log.info("문서 분할기 선택 - {}", EgovKoreanSentenceSplitter.class.getSimpleName());
         } else {
             // 동적으로 TokenTextSplitter 생성
-            textSplitter = new TokenTextSplitter(
-                chunkSize,           // chunkSize: 설정에서 가져온 청크 크기
-                minChunkSizeChars,   // minChunkSizeChars: 설정에서 가져온 최소 청크 크기
-                minChunkLengthToEmbed, // minChunkLengthToEmbed: 임베딩할 최소 청크 길이
-                maxNumChunks,        // maxNumChunks: 설정에서 가져온 최대 청크 수
-                true                 // keepSeparator: 구분자 유지 여부
-            );
+            textSplitter = TokenTextSplitter.builder()
+                .withChunkSize(chunkSize)                         // chunkSize: 설정에서 가져온 청크 크기
+                .withMinChunkSizeChars(minChunkSizeChars)         // minChunkSizeChars: 설정에서 가져온 최소 청크 크기
+                .withMinChunkLengthToEmbed(minChunkLengthToEmbed) // minChunkLengthToEmbed: 임베딩할 최소 청크 길이
+                .withMaxNumChunks(maxNumChunks)                   // maxNumChunks: 설정에서 가져온 최대 청크 수
+                .withKeepSeparator(true)                          // keepSeparator: 구분자 유지 여부
+                .build();
         }
         
         List<Document> splitDocs = textSplitter.apply(documents);

@@ -2,16 +2,16 @@
 
 ## 환경 설정
 
-### 표준프레임워크 실행환경 5.0 (Boot 적용)
+### 표준프레임워크 실행환경 5.1 (Boot 적용)
 
 | 항목 | 버전 |
 | :--- | :--- |
 | JDK | 17 |
 | Jakarta EE | 10 |
 | Servlet | 6.0 |
-| Spring Framework | 6.2.11 |
-| Spring Boot | 3.5.6 |
-| Spring AI | 1.0.1 |
+| Spring Framework | 6.2.19 |
+| Spring Boot | 3.5.16 |
+| Spring AI | 1.1.8 |
 
 ### 개발 및 빌드 도구
 
@@ -32,8 +32,8 @@
 ## 사용 기술
 
 1. Java 17
-2. Spring Boot 3.5.6 (Maven)
-3. Spring AI 1.0.1
+2. Spring Boot 3.5.16 (Maven)
+3. Spring AI 1.1.8
 4. Redis Stack
 5. Ollama
 6. ONNX Runtime (로컬 임베딩)
